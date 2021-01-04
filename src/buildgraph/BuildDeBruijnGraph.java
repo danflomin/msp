@@ -1,23 +1,28 @@
 package buildgraph;
 
+import java.util.*;
+
 public class BuildDeBruijnGraph {
 	
 	public static void main(String[] args){
     	
-    	String infile = "E:\\test.txt";
-    	int k = 15, numBlocks = 256, pivot_len = 12, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+//    	String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
+//		String infile = "/specific/netapp5/gaga/danflomin/msp/danflomin_small_data.fastq";
+		String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
+
+    	int k = 15, numBlocks = 256, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
     	boolean readable = false;
     	
-    	if(args[0].equals("-help")){
-    		System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
-	        			       "Options Available: \n" + 
-	        			       "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" + 
-	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" + 
-	        			       "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
-	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" + 
-	        			       "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
-    		return;
-    	}
+//    	if(args[0].equals("-help")){
+//    		System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
+//	        			       "Options Available: \n" +
+//	        			       "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" +
+//	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
+//	        			       "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
+//	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" +
+//	        			       "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
+//    		return;
+//    	}
     	
     	for(int i=0; i<args.length; i+=2){
     		if(args[i].equals("-in"))
@@ -41,10 +46,10 @@ public class BuildDeBruijnGraph {
     			return;
     		}
     	}
-    	
-		
-		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen);
-		Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
+
+
+		PrePartition prePartition = new PrePartition(k, infile, pivot_len, bufferSize, readLen);
+
 	
 		try{
 			
@@ -57,8 +62,15 @@ public class BuildDeBruijnGraph {
 	    					 "# Of Threads: " + numThreads + "\n" +
 	    					 "R/W Buffer Size: " + bufferSize + "\n" +
 	    					 "Output Format: " + (readable==true?"Text":"Binary") + "\n");
-		
+
+
+			Hashtable<Long, Long> pmerDistributionMap = prePartition.Run();
+			Partition partition = new Partition(bufferSize, pmerDistributionMap);
 			long maxID = partition.Run();
+			numBlocks = partition.getNumOfBlocks();
+
+			// TODO: add splitting to bins
+			Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 			map.Run(numThreads);
 			
 			long time1=0;			
