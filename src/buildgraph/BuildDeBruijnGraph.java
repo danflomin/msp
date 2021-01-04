@@ -69,7 +69,6 @@ public class BuildDeBruijnGraph {
 			long maxID = partition.Run();
 			numBlocks = partition.getNumOfBlocks();
 
-			// TODO: add splitting to bins
 			Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 			map.Run(numThreads);
 			
