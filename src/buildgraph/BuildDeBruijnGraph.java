@@ -20,14 +20,14 @@ public class BuildDeBruijnGraph {
 
 
     public static byte[] uhsBitSet() throws IOException {
-        int n = (int) Math.pow(4, 12) / 8;
+        int n = (int) Math.pow(4, 8) / 8;
         int i = 0;
         byte [] bits = new byte[n];
         for (int j = 0; j<bits.length; j++) {
                 bits[j] = 0;
         }
         
-        String DocksFile = "res_12.txt";
+        String DocksFile = "res_8.txt";
         FileReader frG = new FileReader(DocksFile);
         int count=0;
 
@@ -37,7 +37,7 @@ public class BuildDeBruijnGraph {
                 String line;// = reader.readLine();
                 while ((line = reader.readLine()) != null) {
 //                        if (count < 10) System.out.println(i + " " + line);
-                        i = GetDecimal(line.toCharArray(), 0, 12);
+                        i = GetDecimal(line.toCharArray(), 0, 8);
                         //System.out.println(i);
                         bits[i / 8] |= 1 << (i % 8);
                         count++;
@@ -54,24 +54,24 @@ public class BuildDeBruijnGraph {
     
 	public static void main(String[] args) throws IOException {
     	
-    	String infile = "E:\\test.txt";
-    	int k = 15, numBlocks = 256, pivot_len = 12, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
+    	int k = 15, numBlocks = 256000000, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
     int x = 0;
     	boolean readable = false;
     byte [] uhs_bits =uhsBitSet();
 
     	
-    	if(args[0].equals("-help")){
-    		System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
-	        			       "Options Available: \n" + 
-	        			       "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" + 
-	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" + 
-	        			       "[-x xor] : (Integer) Xor. Default: 0" + "\n" + 
-	        			       "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
-	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" + 
-	        			       "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
-    		return;
-    	}
+//    	if(args[0].equals("-help")){
+//    		System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
+//	        			       "Options Available: \n" +
+//	        			       "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" +
+//	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
+//	        			       "[-x xor] : (Integer) Xor. Default: 0" + "\n" +
+//	        			       "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
+//	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" +
+//	        			       "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
+//    		return;
+//    	}
     	
     	for(int i=0; i<args.length; i+=2){
     		if(args[i].equals("-in"))
