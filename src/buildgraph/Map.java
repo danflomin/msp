@@ -181,6 +181,8 @@ public class Map{
 							bfw.newLine();
 						}
 					}
+
+					System.out.println(" node - " + blockID + " size = " + nodes.keySet().size());
 					
 					nodes.clear();
 					
