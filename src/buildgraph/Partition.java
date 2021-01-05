@@ -9,6 +9,7 @@ public class Partition{
 	private int numOfBlocks;
 	private int pivotLen;
 	private int bufSize;
+	private int xor;
 	
 	private FileReader frG;
 	private BufferedReader bfrG;
@@ -16,21 +17,28 @@ public class Partition{
 	private BufferedWriter[] bfwG;
 	
 	private int readLen;
+	private byte[] uhs_bits;
 	
-	private static int[] valTable = new int[]{0,-1,1,-1,-1,-1,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3};
+	//private static int[] valTable = new int[]{0,-1,1,-1,-1,-1,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3};
+	private static int[] valTable = new int[128];
 	private static char[] twinTable = new char[]{'T','0','G','0','0','0','C','0','0','0','0','0','0','0','0','0','0','0','0','A'};
 
-	public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen){
+	public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, int xor, byte[] uhs_bits){
 		this.k = kk;
 		this.inputfile = infile;
 		this.numOfBlocks = numberOfBlocks;
 		this.pivotLen = pivotLength;
 		this.bufSize = bufferSize;
 		this.readLen = readLen;
+		this.uhs_bits = uhs_bits;
+		this.xor = xor;
+		valTable['A']=0; valTable['C']=1; valTable['G']=2; valTable['T']=3;
 	}
 	
 	private boolean isReadLegal(char[] line){
 		int Len = line.length;
+		if(Len == 0)
+			return false;
 		for(int i=0; i<Len; i++){
 			if(line[i]!='A' && line[i]!='C' && line[i]!='G' && line[i]!='T')
 				return false;
@@ -38,17 +46,95 @@ public class Partition{
 		return true;
 	}
 	
+    private int GetDecimal(char[] a, int from, int to){
+/*        int val = 0;
+        for(int i=from; i<to; i++){
+                val = val<<2;
+                val ^= valTable[a[i]-'A'];
+        }
+        
+        return val;*/
+        return (((((((((((((((((((((valTable[a[from]]*4) | valTable[a[from+1]])*4) | valTable[a[from+2]])*4) | 
+        		valTable[a[from+3]])*4) | valTable[a[from+4]])*4) | valTable[a[from+5]])*4) |
+        		valTable[a[from+6]])*4) | valTable[a[from+7]])*4) | valTable[a[from+8]])*4) | 
+        		valTable[a[from+9]])*4) | valTable[a[from+10]])*4) | valTable[a[from+11]];
+    }
+	
 	private int strcmp(char[] a, char[] b, int froma, int fromb, int len){
-		for(int i = 0; i < len; i++){
+/*		for(int i = 0; i < len; i++){
 			if(a[froma+i] < b[fromb+i])
 				return -1;
 			else if(a[froma+i] > b[fromb+i])
 				return 1;
 		}
-		return 0;
+		return 0;*/
+		
+        int x = GetDecimal(a, froma, froma+pivotLen);
+        int y = GetDecimal(b, fromb, fromb+pivotLen);
+        int xdiv8 = x >> 3; int xmod8 = x & 0b111;
+        int ydiv8 = y >> 3; int ymod8 = y & 0b111;
+        if ((((this.uhs_bits[xdiv8] >> (xmod8)) & 1) ^ ((this.uhs_bits[ydiv8] >> (ymod8)) & 1)) == 0) {
+        if((x ^ xor) < (y ^ xor))
+                return -1;
+        else //if((x ^ 11101101) > (y ^ 11101101))
+                return 1;       
+        }
+        
+        if (((this.uhs_bits[xdiv8] >> (xmod8)) & 1) > ((this.uhs_bits[ydiv8] >> (ymod8)) & 1))
+    			return -1;
+        if (((this.uhs_bits[xdiv8] >> (xmod8)) & 1) < ((this.uhs_bits[ydiv8] >> (ymod8)) & 1))
+    			return 1;
+        
+        return 0;
 	}
 	
-	private int findSmallest(char[] a, int from, int to){
+	private int strcmp(char[] a, char[] b, int x, int y, int froma, int fromb, int len){
+/*		for(int i = 0; i < len; i++){
+			if(a[froma+i] < b[fromb+i])
+				return -1;
+			else if(a[froma+i] > b[fromb+i])
+				return 1;
+		}
+		return 0;*/
+		
+//        int x = GetDecimal(a, froma, froma+pivotLen);
+//        int y = GetDecimal(b, fromb, fromb+pivotLen);
+        int xdiv8 = x >> 3; int xmod8 = x & 0b111;
+        int ydiv8 = y >> 3; int ymod8 = y & 0b111;
+        if ((((this.uhs_bits[xdiv8] >> (xmod8)) & 1) ^ ((this.uhs_bits[ydiv8] >> (ymod8)) & 1)) == 0) {
+        if((x ^ xor) < (y ^ xor))
+                return -1;
+        else if((x ^ xor) > (y ^ xor))
+                return 1;       
+        }
+        
+        if (((this.uhs_bits[xdiv8] >> (xmod8)) & 1) > ((this.uhs_bits[ydiv8] >> (ymod8)) & 1))
+    			return -1;
+        if (((this.uhs_bits[xdiv8] >> (xmod8)) & 1) < ((this.uhs_bits[ydiv8] >> (ymod8)) & 1))
+    			return 1;
+        
+        return 0;
+	}
+
+    private int findSmallest(char[] a, int from, int to){
+//        from = find_the_first_p_string_in_uhs(a,from, to);
+        int min_pos = from;
+        int j = GetDecimal(a, min_pos, min_pos+pivotLen);
+        int prev = j;
+        for(int i=from+1; i<=to-pivotLen; i++){
+                j = ((j * 4) ^ (valTable[a[i+11]])) & 0x00ffffff;
+                if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) {
+                        if(strcmp(a, a, prev, j, min_pos, i, pivotLen)>0) {
+                                        min_pos = i;
+                                        prev = j;
+                        }
+
+                }
+        }
+        return min_pos;
+}
+    
+/*	private int findSmallest(char[] a, int from, int to){
 		
 		int min_pos = from;
 		
@@ -58,8 +144,34 @@ public class Partition{
 		}
 		
 		return min_pos;
-	}
+	}*/
 	
+	
+    private int find_the_first_p_string_in_uhs(char[] a, int from, int to) {
+        boolean flag  = false;
+        int ans = -1;
+        String s = new String(a, from, pivotLen);
+        int j = GetDecimal(a, from, from+pivotLen);
+        if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) {
+                flag = true;
+                ans = from;
+        }
+        else
+        {
+                for(int  i = from+1; i<= to-pivotLen && !flag; i++) {
+                        //j = GetDecimal(a, i, i+pivotLen);
+                        j = ((j * 4) ^ (valTable[a[i+11]])) & 0x00ffffff;
+                        if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) {
+                                flag = true;
+                                ans = i;
+                        }
+                }
+                
+        }
+
+        return ans;
+    }
+    
 	private int findPosOfMin(char[] a, char[] b, int from, int to, int[] flag){
 		
 		int len = a.length;
@@ -81,8 +193,8 @@ public class Partition{
 		int val=0;
 		
 		for(int i=from; i<to; i++){
-			val = val<<2;
-			val += valTable[a[i]-'A'];
+			val = val*4;
+			val += valTable[a[i]];
 		}
 		
 		return val % numOfBlocks;
@@ -117,8 +229,13 @@ public class Partition{
 			
 			bfrG.read(lineCharArray, 0, readLen);
 			bfrG.read();
+			//lineCharArray = describeline.toCharArray();
 			
 			prepos = -1;
+			//System.out.println("Start of read");
+			//System.out.println(new String(lineCharArray));
+			//System.out.println("End of read");
+
 			if(isReadLegal(lineCharArray)){
 				
 				substart = 0;
@@ -166,7 +283,10 @@ public class Partition{
 						
 						if(strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen)<0){
 							if(strcmp(lineCharArray, flag[0]==0?lineCharArray:revCharArray, k + i - pivotLen, min_pos, pivotLen)<0){
-								
+                                String s = new String(lineCharArray,  k + i - pivotLen, pivotLen);
+                                int j = GetDecimal(lineCharArray,k + i - pivotLen, k+i );
+                                if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1)/* we added this to verify that the last p-substring is also in the UHS*/{
+
 								int temp = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
 								
 								min_pos = k + i - pivotLen;
@@ -182,14 +302,17 @@ public class Partition{
 									substart = i;
 									outcnt = cnt;
 								}
+                                
 								
 								flag[0]=0;
-	
+                                }
 							}
 						}
 						else{
 							if(strcmp(revCharArray, flag[0]==0?lineCharArray:revCharArray, len - i - k, min_pos, pivotLen)<0){
-								
+                                String s2 = new String(revCharArray, len - i - k, pivotLen);
+                                int j = GetDecimal(revCharArray,len - i - k, len - i - k + pivotLen);
+                                if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) /* we added this to verify that the last p-substring is also in the UHS*/{
 								int temp = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
 								
 								min_pos = -k - i + len;
@@ -204,8 +327,8 @@ public class Partition{
 									
 									substart = i;
 									outcnt = cnt;
-								}
-								
+						}
+                                }
 								flag[0]=1;
 								
 								
@@ -286,7 +409,7 @@ public class Partition{
     	}
     	
 		
-		Partition bdgraph = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen);
+		Partition bdgraph = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, 0, new byte[0]);
 	
 		try{
 			

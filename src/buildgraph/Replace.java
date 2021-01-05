@@ -1,5 +1,4 @@
 package buildgraph;
-
 import java.io.*;
 
 public class Replace {
