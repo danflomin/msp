@@ -1,6 +1,7 @@
 package buildgraph;
 
 import java.io.*;
+import java.util.HashMap;
 
 public class Partition{
 	
@@ -52,12 +53,17 @@ public class Partition{
                 val = val<<2;
                 val ^= valTable[a[i]-'A'];
         }
-        
+
+
         return val;*/
-        return (((((((((((((((((((((valTable[a[from]]*4) | valTable[a[from+1]])*4) | valTable[a[from+2]])*4) | 
-        		valTable[a[from+3]])*4) | valTable[a[from+4]])*4) | valTable[a[from+5]])*4) |
-        		valTable[a[from+6]])*4) | valTable[a[from+7]])*4) | valTable[a[from+8]])*4) | 
-        		valTable[a[from+9]])*4) | valTable[a[from+10]])*4) | valTable[a[from+11]];
+		//        TODO: till 7
+		return ((((((((((((((valTable[a[from]]*4) | valTable[a[from+1]])*4) | valTable[a[from+2]])*4) |
+				valTable[a[from+3]])*4) | valTable[a[from+4]])*4) | valTable[a[from+5]])*4) |
+				valTable[a[from+6]])*4) | valTable[a[from+7]]);
+//        return (((((((((((((((((((((valTable[a[from]]*4) | valTable[a[from+1]])*4) | valTable[a[from+2]])*4) |
+//        		valTable[a[from+3]])*4) | valTable[a[from+4]])*4) | valTable[a[from+5]])*4) |
+//        		valTable[a[from+6]])*4) | valTable[a[from+7]])*4) | valTable[a[from+8]])*4) |
+//        		valTable[a[from+9]])*4) | valTable[a[from+10]])*4) | valTable[a[from+11]];
     }
 	
 	private int strcmp(char[] a, char[] b, int froma, int fromb, int len){
@@ -122,7 +128,7 @@ public class Partition{
         int j = GetDecimal(a, min_pos, min_pos+pivotLen);
         int prev = j;
         for(int i=from+1; i<=to-pivotLen; i++){
-                j = ((j * 4) ^ (valTable[a[i+11]])) & 0x00ffffff;
+                j = ((j * 4) ^ (valTable[a[i+7]])) & 0x0000ffff;// ^ (valTable[a[i+11]]))& 0x00ffffff;
                 if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) {
                         if(strcmp(a, a, prev, j, min_pos, i, pivotLen)>0) {
                                         min_pos = i;
@@ -189,22 +195,27 @@ public class Partition{
 	}
 	
 	private int calPosNew(char[] a, int from, int to){
-		
+
 		int val=0;
-		
+
 		for(int i=from; i<to; i++){
 			val = val*4;
 			val += valTable[a[i]];
 		}
-		
+
 		return val % numOfBlocks;
 	}
+
 	
 	private long DistributeNodes() throws IOException{
 		frG = new FileReader(inputfile);
 		bfrG = new BufferedReader(frG, bufSize);
+		HashMap<Integer, FileWriter> pmerFileWriter = new HashMap<>();
+		HashMap<Integer, BufferedWriter> pmerBufferedFileWriter = new HashMap<>();
 		fwG = new FileWriter[numOfBlocks];
 		bfwG = new BufferedWriter[numOfBlocks];
+
+
 		
 		String describeline;
 		
@@ -220,10 +231,10 @@ public class Partition{
 		if(!dir.exists())
 			dir.mkdir();
 	
-		for(int i=0;i<numOfBlocks;i++){
-			fwG[i] = new FileWriter("Nodes/nodes"+i);
-			bfwG[i] = new BufferedWriter(fwG[i], bufSize);
-		}
+//		for(int i=0;i<15000;i++){
+//			fwG[i] = new FileWriter("Nodes/nodes"+i);
+//			bfwG[i] = new BufferedWriter(fwG[i], bufSize);
+//		}
 		
 		while((describeline = bfrG.readLine()) != null){
 			
@@ -267,12 +278,9 @@ public class Partition{
 						if(temp != (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen))){
 							prepos = temp;
 							subend = i - 1 + k;
-							
-							
-							bfwG[prepos].write(lineCharArray, substart, subend-substart);
-							bfwG[prepos].write("\t"+outcnt);
-							bfwG[prepos].newLine();
-														
+
+							writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+
 							substart = i;
 							outcnt = cnt;
 						}
@@ -283,7 +291,7 @@ public class Partition{
 						
 						if(strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen)<0){
 							if(strcmp(lineCharArray, flag[0]==0?lineCharArray:revCharArray, k + i - pivotLen, min_pos, pivotLen)<0){
-                                String s = new String(lineCharArray,  k + i - pivotLen, pivotLen);
+                                //String s = new String(lineCharArray,  k + i - pivotLen, pivotLen);
                                 int j = GetDecimal(lineCharArray,k + i - pivotLen, k+i );
                                 if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1)/* we added this to verify that the last p-substring is also in the UHS*/{
 
@@ -294,11 +302,9 @@ public class Partition{
 								if(temp != calPosNew(lineCharArray, min_pos, min_pos+pivotLen)){
 									prepos = temp;
 									subend = i - 1 + k;
-									
-									bfwG[prepos].write(lineCharArray, substart, subend-substart);
-									bfwG[prepos].write("\t"+outcnt);
-									bfwG[prepos].newLine();
-									
+
+									writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+
 									substart = i;
 									outcnt = cnt;
 								}
@@ -310,7 +316,7 @@ public class Partition{
 						}
 						else{
 							if(strcmp(revCharArray, flag[0]==0?lineCharArray:revCharArray, len - i - k, min_pos, pivotLen)<0){
-                                String s2 = new String(revCharArray, len - i - k, pivotLen);
+                                //String s2 = new String(revCharArray, len - i - k, pivotLen);
                                 int j = GetDecimal(revCharArray,len - i - k, len - i - k + pivotLen);
                                 if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) /* we added this to verify that the last p-substring is also in the UHS*/{
 								int temp = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
@@ -320,18 +326,16 @@ public class Partition{
 								if(temp != calPosNew(revCharArray, min_pos, min_pos+pivotLen)){
 									prepos = temp;
 									subend = i - 1 + k;
-									
-									bfwG[prepos].write(lineCharArray, substart, subend-substart);
-									bfwG[prepos].write("\t"+outcnt);
-									bfwG[prepos].newLine();
-									
+
+									writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+
 									substart = i;
 									outcnt = cnt;
 						}
                                 }
 								flag[0]=1;
-								
-								
+
+
 							}
 						}
 					}
@@ -340,18 +344,23 @@ public class Partition{
 				}
 				subend = len;
 				prepos = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
-				
-				bfwG[prepos].write(lineCharArray, substart, subend-substart);
-				bfwG[prepos].write("\t"+outcnt);
-				bfwG[prepos].newLine();			
+
+				writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
 			}
 		}
 		
 		System.out.println("Largest ID is " + cnt);
 		
-		for(int i=0;i<numOfBlocks;i++){
-			bfwG[i].close();
-			fwG[i].close();
+//		for(int i=0;i<numOfBlocks;i++){
+//			bfwG[i].close();
+//			fwG[i].close();
+//		}
+
+		for(BufferedWriter writer : pmerBufferedFileWriter.values()){
+			writer.close();
+		}
+		for(FileWriter writer : pmerFileWriter.values()){
+			writer.close();
 		}
 		
 		bfrG.close();
@@ -359,7 +368,24 @@ public class Partition{
 		
 		return cnt;
 	}
-	
+
+	private void writeToFile(HashMap<Integer, FileWriter> pmerFileWriter, HashMap<Integer, BufferedWriter> pmerBufferedFileWriter, int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
+		createWriterForPmer(pmerFileWriter, pmerBufferedFileWriter, prepos);
+
+		BufferedWriter writer = pmerBufferedFileWriter.get(prepos);
+
+		writer.write(lineCharArray, substart, subend - substart);
+		writer.write("\t" + outcnt);
+		writer.newLine();
+	}
+
+	private void createWriterForPmer(HashMap<Integer, FileWriter> pmerFileWriter, HashMap<Integer, BufferedWriter> pmerBufferedFileWriter, int prepos) throws IOException {
+		if (!pmerBufferedFileWriter.containsKey(prepos)) {
+			pmerFileWriter.put(prepos, new FileWriter("Nodes/nodes" + prepos));
+			pmerBufferedFileWriter.put(prepos, new BufferedWriter(pmerFileWriter.get(prepos), bufSize));
+		}
+	}
+
 	public long Run() throws Exception{
 		
 		long time1=0;

@@ -19,15 +19,15 @@ public class BuildDeBruijnGraph {
     }
 
 
-    public static byte[] uhsBitSet() throws IOException {
-        int n = (int) Math.pow(4, 8) / 8;
+    public static byte[] uhsBitSet(int pivot_len) throws IOException {
+        int n = (int) Math.pow(4, pivot_len) / 8;
         int i = 0;
         byte [] bits = new byte[n];
         for (int j = 0; j<bits.length; j++) {
                 bits[j] = 0;
         }
         
-        String DocksFile = "res_8.txt";
+        String DocksFile = "res_"+ pivot_len +".txt";
         FileReader frG = new FileReader(DocksFile);
         int count=0;
 
@@ -37,7 +37,7 @@ public class BuildDeBruijnGraph {
                 String line;// = reader.readLine();
                 while ((line = reader.readLine()) != null) {
 //                        if (count < 10) System.out.println(i + " " + line);
-                        i = GetDecimal(line.toCharArray(), 0, 8);
+                        i = GetDecimal(line.toCharArray(), 0, pivot_len);
                         //System.out.println(i);
                         bits[i / 8] |= 1 << (i % 8);
                         count++;
@@ -51,14 +51,14 @@ public class BuildDeBruijnGraph {
         return bits;
 }
 
-    
+
 	public static void main(String[] args) throws IOException {
     	
     	String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-    	int k = 15, numBlocks = 256000000, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+    	int k = 60, numBlocks = 25600, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
     int x = 0;
     	boolean readable = false;
-    byte [] uhs_bits =uhsBitSet();
+    byte [] uhs_bits =uhsBitSet(pivot_len);
 
     	
 //    	if(args[0].equals("-help")){
@@ -98,7 +98,7 @@ public class BuildDeBruijnGraph {
     		}
     	}
     	
-		
+
 		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, x, uhs_bits);
 		Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 	
