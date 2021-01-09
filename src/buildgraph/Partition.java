@@ -1,7 +1,6 @@
 package buildgraph;
 
 import java.io.*;
-import java.util.HashMap;
 
 public class Partition{
 	
@@ -203,17 +202,20 @@ public class Partition{
 			val += valTable[a[i]];
 		}
 
-		return val % numOfBlocks;
+		return val ;//% numOfBlocks;
 	}
 
 	
 	private long DistributeNodes() throws IOException{
 		frG = new FileReader(inputfile);
 		bfrG = new BufferedReader(frG, bufSize);
-		HashMap<Integer, FileWriter> pmerFileWriter = new HashMap<>();
-		HashMap<Integer, BufferedWriter> pmerBufferedFileWriter = new HashMap<>();
-		fwG = new FileWriter[numOfBlocks];
-		bfwG = new BufferedWriter[numOfBlocks];
+//		HashMap<Integer, FileWriter> pmerFileWriter = new HashMap<>();
+//		HashMap<Integer, BufferedWriter> pmerBufferedFileWriter = new HashMap<>();
+//		fwG = new FileWriter[numOfBlocks];
+//		bfwG = new BufferedWriter[numOfBlocks];
+
+		fwG = new FileWriter[(int)Math.pow(4, pivotLen)];
+		bfwG = new BufferedWriter[(int)Math.pow(4, pivotLen)];
 
 
 		
@@ -279,7 +281,7 @@ public class Partition{
 							prepos = temp;
 							subend = i - 1 + k;
 
-							writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+							writeToFile(prepos, substart, subend, lineCharArray, outcnt);
 
 							substart = i;
 							outcnt = cnt;
@@ -303,7 +305,7 @@ public class Partition{
 									prepos = temp;
 									subend = i - 1 + k;
 
-									writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+									writeToFile(prepos, substart, subend, lineCharArray, outcnt);
 
 									substart = i;
 									outcnt = cnt;
@@ -327,7 +329,7 @@ public class Partition{
 									prepos = temp;
 									subend = i - 1 + k;
 
-									writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+									writeToFile(prepos, substart, subend, lineCharArray, outcnt);
 
 									substart = i;
 									outcnt = cnt;
@@ -345,22 +347,17 @@ public class Partition{
 				subend = len;
 				prepos = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
 
-				writeToFile(pmerFileWriter, pmerBufferedFileWriter, prepos, substart, subend, lineCharArray, outcnt);
+				writeToFile(prepos, substart, subend, lineCharArray, outcnt);
 			}
 		}
 		
 		System.out.println("Largest ID is " + cnt);
 		
-//		for(int i=0;i<numOfBlocks;i++){
-//			bfwG[i].close();
-//			fwG[i].close();
-//		}
-
-		for(BufferedWriter writer : pmerBufferedFileWriter.values()){
-			writer.close();
-		}
-		for(FileWriter writer : pmerFileWriter.values()){
-			writer.close();
+		for(int i=0;i<bfwG.length;i++){
+			if(bfwG[i] != null){
+				bfwG[i].close();
+				fwG[i].close();
+			}
 		}
 		
 		bfrG.close();
@@ -369,20 +366,20 @@ public class Partition{
 		return cnt;
 	}
 
-	private void writeToFile(HashMap<Integer, FileWriter> pmerFileWriter, HashMap<Integer, BufferedWriter> pmerBufferedFileWriter, int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
-		createWriterForPmer(pmerFileWriter, pmerBufferedFileWriter, prepos);
+	private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
+		tryCreateWriterForPmer(prepos);
 
-		BufferedWriter writer = pmerBufferedFileWriter.get(prepos);
+		BufferedWriter writer = bfwG[prepos];
 
 		writer.write(lineCharArray, substart, subend - substart);
 		writer.write("\t" + outcnt);
 		writer.newLine();
 	}
 
-	private void createWriterForPmer(HashMap<Integer, FileWriter> pmerFileWriter, HashMap<Integer, BufferedWriter> pmerBufferedFileWriter, int prepos) throws IOException {
-		if (!pmerBufferedFileWriter.containsKey(prepos)) {
-			pmerFileWriter.put(prepos, new FileWriter("Nodes/nodes" + prepos));
-			pmerBufferedFileWriter.put(prepos, new BufferedWriter(pmerFileWriter.get(prepos), bufSize));
+	private void tryCreateWriterForPmer(int prepos) throws IOException {
+    	if(bfwG[prepos] == null){
+			fwG[prepos] = new FileWriter("Nodes/nodes" + prepos);
+			bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
 		}
 	}
 

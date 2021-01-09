@@ -68,7 +68,13 @@ public class Map{
 						p = blockID;
 						blockID++;
 					}
-								
+
+
+					File node = new File("Nodes/nodes"+p);
+					if(!node.exists()) {
+						continue;
+					}
+
 					fr = new FileReader("Nodes/nodes"+p);
 					bfr = new BufferedReader(fr, bufSize);
 					fw = new FileWriter("Maps/maps"+p);
@@ -182,7 +188,7 @@ public class Map{
 						}
 					}
 
-					System.out.println(" node - " + blockID + " size = " + nodes.keySet().size());
+					System.out.println(p + ": " +  nodes.keySet().size() + ",");
 					
 					nodes.clear();
 					
