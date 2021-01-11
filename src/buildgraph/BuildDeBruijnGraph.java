@@ -55,7 +55,7 @@ public class BuildDeBruijnGraph {
 	public static void main(String[] args) throws IOException {
     	
     	String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-    	int k = 60, numBlocks = 25600000, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+    	int k = 60, numBlocks = 25600000, pivot_len = 10, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
     int x = 0;
     	boolean readable = false;
     byte [] uhs_bits =uhsBitSet(pivot_len);
