@@ -85,14 +85,25 @@ public class Partition{
 			val += valTable[a[i]-'A'];
 		}
 		
-		return val % numOfBlocks;
+		return val ;//% numOfBlocks;
 	}
+
+	private void tryCreateWriter(int prepos) throws IOException {
+		if(bfwG[prepos] == null){
+			fwG[prepos] = new FileWriter("Nodes/nodes"+prepos);
+			bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
+		}
+	}
+
 	
 	private long DistributeNodes() throws IOException{
 		frG = new FileReader(inputfile);
 		bfrG = new BufferedReader(frG, bufSize);
-		fwG = new FileWriter[numOfBlocks];
-		bfwG = new BufferedWriter[numOfBlocks];
+//		fwG = new FileWriter[numOfBlocks];
+//		bfwG = new BufferedWriter[numOfBlocks];
+
+		fwG = new FileWriter[(int)Math.pow(4, pivotLen)];
+		bfwG = new BufferedWriter[(int)Math.pow(4, pivotLen)];
 		
 		String describeline;
 		
@@ -108,10 +119,10 @@ public class Partition{
 		if(!dir.exists())
 			dir.mkdir();
 	
-		for(int i=0;i<numOfBlocks;i++){
-			fwG[i] = new FileWriter("Nodes/nodes"+i);
-			bfwG[i] = new BufferedWriter(fwG[i], bufSize);
-		}
+//		for(int i=0;i<numOfBlocks;i++){
+//			fwG[i] = new FileWriter("Nodes/nodes"+i);
+//			bfwG[i] = new BufferedWriter(fwG[i], bufSize);
+//		}
 		
 		while((describeline = bfrG.readLine()) != null){
 			
@@ -150,8 +161,9 @@ public class Partition{
 						if(temp != (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen))){
 							prepos = temp;
 							subend = i - 1 + k;
-							
-							
+
+							tryCreateWriter(prepos);
+
 							bfwG[prepos].write(lineCharArray, substart, subend-substart);
 							bfwG[prepos].write("\t"+outcnt);
 							bfwG[prepos].newLine();
@@ -174,7 +186,9 @@ public class Partition{
 								if(temp != calPosNew(lineCharArray, min_pos, min_pos+pivotLen)){
 									prepos = temp;
 									subend = i - 1 + k;
-									
+
+									tryCreateWriter(prepos);
+
 									bfwG[prepos].write(lineCharArray, substart, subend-substart);
 									bfwG[prepos].write("\t"+outcnt);
 									bfwG[prepos].newLine();
@@ -197,7 +211,9 @@ public class Partition{
 								if(temp != calPosNew(revCharArray, min_pos, min_pos+pivotLen)){
 									prepos = temp;
 									subend = i - 1 + k;
-									
+
+									tryCreateWriter(prepos);
+
 									bfwG[prepos].write(lineCharArray, substart, subend-substart);
 									bfwG[prepos].write("\t"+outcnt);
 									bfwG[prepos].newLine();
@@ -217,7 +233,9 @@ public class Partition{
 				}
 				subend = len;
 				prepos = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
-				
+
+				tryCreateWriter(prepos);
+
 				bfwG[prepos].write(lineCharArray, substart, subend-substart);
 				bfwG[prepos].write("\t"+outcnt);
 				bfwG[prepos].newLine();			
@@ -226,9 +244,11 @@ public class Partition{
 		
 		System.out.println("Largest ID is " + cnt);
 		
-		for(int i=0;i<numOfBlocks;i++){
-			bfwG[i].close();
-			fwG[i].close();
+		for(int i=0;i<bfwG.length;i++){
+			if(bfwG[i] != null) {
+				bfwG[i].close();
+				fwG[i].close();
+			}
 		}
 		
 		bfrG.close();

@@ -5,7 +5,7 @@ public class BuildDeBruijnGraph {
 	public static void main(String[] args){
     	
     	String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-    	int k = 15, numBlocks = 256, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+    	int k = 60, numBlocks = 256, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
     	boolean readable = false;
     	
 //    	if(args[0].equals("-help")){
