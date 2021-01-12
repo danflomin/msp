@@ -5,7 +5,7 @@ public class BuildDeBruijnGraph {
 	public static void main(String[] args){
     	
     	String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-    	int k = 60, numBlocks = 256, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+    	int k = 60, numBlocks = 256, pivot_len = 10, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
     	boolean readable = false;
     	
 //    	if(args[0].equals("-help")){
@@ -58,20 +58,20 @@ public class BuildDeBruijnGraph {
 	    					 "R/W Buffer Size: " + bufferSize + "\n" +
 	    					 "Output Format: " + (readable==true?"Text":"Binary") + "\n");
 		
-			long maxID = partition.Run();
+//			long maxID = partition.Run();
 			map.Run(numThreads);
 			
-			long time1=0;			
-			long t1 = System.currentTimeMillis();
-			System.out.println("Merge IDReplaceTables Begin!");	
-			String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-			Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
-			long t2 = System.currentTimeMillis();
-			time1 = (t2-t1)/1000;
-			System.out.println("Time used for merging: " + time1 + " seconds!");
-			
-			Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-			replace.Run(readable);
+//			long time1=0;
+//			long t1 = System.currentTimeMillis();
+//			System.out.println("Merge IDReplaceTables Begin!");
+//			String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+//			Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
+//			long t2 = System.currentTimeMillis();
+//			time1 = (t2-t1)/1000;
+//			System.out.println("Time used for merging: " + time1 + " seconds!");
+//
+//			Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+//			replace.Run(readable);
 			
 		
 		}

@@ -16,6 +16,8 @@ public class Partition{
 	private BufferedWriter[] bfwG;
 	
 	private int readLen;
+
+	private int numOpenFiles = 0;
 	
 	private static int[] valTable = new int[]{0,-1,1,-1,-1,-1,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3};
 	private static char[] twinTable = new char[]{'T','0','G','0','0','0','C','0','0','0','0','0','0','0','0','0','0','0','0','A'};
@@ -89,10 +91,25 @@ public class Partition{
 	}
 
 	private void tryCreateWriter(int prepos) throws IOException {
-		if(bfwG[prepos] == null){
-			fwG[prepos] = new FileWriter("Nodes/nodes"+prepos);
-			bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
+		if(numOpenFiles == 16000) {
+			for (int i=0;i<bfwG.length;i++){
+				if(bfwG[i] != null){
+					bfwG[i].close();
+					fwG[i].close();
+					bfwG[i] = null;
+					fwG[i] = null;
+				}
+			}
+			Runtime.getRuntime().gc();
+				numOpenFiles = 0;
 		}
+
+		if(bfwG[prepos] == null){
+			fwG[prepos] = new FileWriter("Nodes/nodes" + prepos, true);
+			bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
+			numOpenFiles += 1;
+		}
+
 	}
 
 	

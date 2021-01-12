@@ -62,7 +62,7 @@ public class Map{
 				if(!dir.exists())
 					dir.mkdir();
 				
-				while(blockID<=(int)Math.pow(4, 8)){
+				while(blockID<=(int)Math.pow(4, 10)){
 					
 					synchronized (lock_blocks){
 						p = blockID;
