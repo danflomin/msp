@@ -61,13 +61,13 @@ public class Partition {
 
         return val;*/
         //        TODO: till 7
-//		return ((((((((((((((valTable[a[from]]*4) | valTable[a[from+1]])*4) | valTable[a[from+2]])*4) |
-//				valTable[a[from+3]])*4) | valTable[a[from+4]])*4) | valTable[a[from+5]])*4) |
-//				valTable[a[from+6]])*4) | valTable[a[from+7]]);
-        return ((((((((((((((((((valTable[a[from]] * 4) | valTable[a[from + 1]]) * 4) | valTable[a[from + 2]]) * 4) |
-                valTable[a[from + 3]]) * 4) | valTable[a[from + 4]]) * 4) | valTable[a[from + 5]]) * 4) |
-                valTable[a[from + 6]]) * 4) | valTable[a[from + 7]]) * 4) | valTable[a[from + 8]]) * 4) |
-                valTable[a[from + 9]]);
+		return ((((((((((((((valTable[a[from]]*4) | valTable[a[from+1]])*4) | valTable[a[from+2]])*4) |
+				valTable[a[from+3]])*4) | valTable[a[from+4]])*4) | valTable[a[from+5]])*4) |
+				valTable[a[from+6]])*4) | valTable[a[from+7]]);
+//        return ((((((((((((((((((valTable[a[from]] * 4) | valTable[a[from + 1]]) * 4) | valTable[a[from + 2]]) * 4) |
+//                valTable[a[from + 3]]) * 4) | valTable[a[from + 4]]) * 4) | valTable[a[from + 5]]) * 4) |
+//                valTable[a[from + 6]]) * 4) | valTable[a[from + 7]]) * 4) | valTable[a[from + 8]]) * 4) |
+//                valTable[a[from + 9]]);
     }
 
     private int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
@@ -81,11 +81,25 @@ public class Partition {
 
         int x = GetDecimal(a, froma, froma + pivotLen);
         int y = GetDecimal(b, fromb, fromb + pivotLen);
+
+        if(x==y)
+            return 0;
+
         int xdiv8 = x >> 3;
         int xmod8 = x & 0b111;
         int ydiv8 = y >> 3;
         int ymod8 = y & 0b111;
         if ((((this.uhs_bits[xdiv8] >> (xmod8)) & 1) ^ ((this.uhs_bits[ydiv8] >> (ymod8)) & 1)) == 0) {
+            if(x<=1030 || x >= 64500){
+                if(y>1030 && y < 64500){
+                    return 1;
+                }
+            }
+            if(y<=1030 || y >= 64500){
+                if(x>1030 && x < 64500){
+                    return -1;
+                }
+            }
             if ((x ^ xor) < (y ^ xor))
                 return -1;
             else //if((x ^ 11101101) > (y ^ 11101101))
@@ -109,6 +123,10 @@ public class Partition {
 		}
 		return 0;*/
 
+        if(x==y)
+            return 0;
+
+
 //        int x = GetDecimal(a, froma, froma+pivotLen);
 //        int y = GetDecimal(b, fromb, fromb+pivotLen);
         int xdiv8 = x >> 3;
@@ -116,6 +134,17 @@ public class Partition {
         int ydiv8 = y >> 3;
         int ymod8 = y & 0b111;
         if ((((this.uhs_bits[xdiv8] >> (xmod8)) & 1) ^ ((this.uhs_bits[ydiv8] >> (ymod8)) & 1)) == 0) {
+            if(x<=1030 || x >= 64500){
+                if(y>1030 && y < 64500){
+                    return 1;
+                }
+            }
+            if(y<=1030 || y >= 64500){
+                if(x>1030 && x < 64500){
+                    return -1;
+                }
+            }
+
             if ((x ^ xor) < (y ^ xor))
                 return -1;
             else if ((x ^ xor) > (y ^ xor))
@@ -136,7 +165,7 @@ public class Partition {
         int j = GetDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;
         for (int i = from + 1; i <= to - pivotLen; i++) {
-            j = ((j * 4) ^ (valTable[a[i + 9]])) & 0x000fffff;// ^ (valTable[a[i+11]]))& 0x00ffffff;
+            j = ((j * 4) ^ (valTable[a[i + 7]])) & 0x0000ffff;// ^ (valTable[a[i+11]]))& 0x00ffffff;
             if (((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) {
                 if (strcmp(a, a, prev, j, min_pos, i, pivotLen) > 0) {
                     min_pos = i;
