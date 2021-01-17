@@ -187,7 +187,7 @@ public class Map{
 						}
 					}
 
-					System.out.println(p + " : " + nodes.size());
+					System.out.println(p + " : " + nodes.size() + ",");
 					
 					nodes.clear();
 					
