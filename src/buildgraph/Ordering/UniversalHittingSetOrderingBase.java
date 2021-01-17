@@ -1,83 +1,75 @@
 package buildgraph.Ordering;
 
+import buildgraph.StringUtils;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 
-public abstract class UniversalHittingSetOrderingBase implements IOrdering{
+public abstract class UniversalHittingSetOrderingBase implements IOrdering {
 
     protected byte[] uhsBits;
+    protected StringUtils stringUtils;
 
-    public UniversalHittingSetOrderingBase(int pivotLen){
+    protected static final int BOTH_IN_UHS = 824;
+    protected int pivotLen;
+
+    public UniversalHittingSetOrderingBase(int pivotLen) {
+        this.pivotLen = pivotLen;
         try {
             uhsBits = uhsBitSet(pivotLen);
+        } catch (Exception e) {
         }
-        catch (Exception e) {}
+        stringUtils = new StringUtils();
     }
 
 
-
-
-    protected boolean isInUHS(int x){
-        int xdiv8 = x >> 3; int xmod8 = x & 0b111;
-        if(((this.uhsBits[xdiv8] >> (xmod8)) & 1) == 1){
+    protected boolean isInUHS(int pmerDecimal) {
+        int pmerDecimalDiv8 = pmerDecimal >> 3;
+        int pmerDecimalMod8 = pmerDecimal & 0b111;
+        if (((this.uhsBits[pmerDecimalDiv8] >> (pmerDecimalMod8)) & 1) == 1) {
             return true;
         }
         return false;
     }
 
-
-    @Override
-    public int strcmp(int x, int y){
-        if(x == y)
+    protected int strcmpBase(int x, int y) {
+        if (x == y)
             return 0;
 
-        int xdiv8 = x >> 3; int xmod8 = x & 0b111;
-        int ydiv8 = y >> 3; int ymod8 = y & 0b111;
         boolean xInUHS = isInUHS(x);
         boolean yInUHS = isInUHS(y);
-        if(xInUHS && !yInUHS){
+        if (xInUHS && !yInUHS) {
             return -1;
-        }
-        else if (!xInUHS && yInUHS){
+        } else if (!xInUHS && yInUHS) {
             return 1;
         }
-        else { // both in UHS
-
-        }
-
-        if ((((this.uhsBits[xdiv8] >> (xmod8)) & 1) ^ ((this.uhsBits[ydiv8] >> (ymod8)) & 1)) == 0) {
-            if((x ^ xor) < (y ^ xor))
-                return -1;
-            else if((x ^ xor) > (y ^ xor))
-                return 1;
-        }
-
-
+        return BOTH_IN_UHS;
     }
+
 
     @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len){
-        int x = GetDecimal(a, froma, froma+pivotLen);
-        int y = GetDecimal(b, fromb, fromb+pivotLen);
-        return strcmp(x,y);
+    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
+        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
+        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
+        return strcmp(x, y);
     }
 
-    private  byte[] uhsBitSet(int pivotLen) throws IOException {
+    private byte[] uhsBitSet(int pivotLen) throws IOException {
         int n = (int) Math.pow(4, pivotLen) / 8;
         int i = 0;
-        byte [] bits = new byte[n];
+        byte[] bits = new byte[n];
 
         String DocksFile = "res_" + pivotLen + ".txt";
         FileReader frG = new FileReader(DocksFile);
-        int count=0;
+        int count = 0;
 
         BufferedReader reader;
         try {
             reader = new BufferedReader(frG);
             String line;
             while ((line = reader.readLine()) != null) {
-                i = GetDecimal(line.toCharArray(), 0, pivotLen);
+                i = stringUtils.getDecimal(line.toCharArray(), 0, pivotLen);
                 bits[i / 8] |= 1 << (i % 8);
                 count++;
             }
