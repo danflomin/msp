@@ -4,8 +4,9 @@ public class BuildDeBruijnGraph {
 	
 	public static void main(String[] args){
     	
-    	String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-    	int k = 60, numBlocks = 256, pivot_len = 10, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+//    	String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
+		String infile = "/specific/netapp5/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
+    	int k = 60, numBlocks = 256, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 10000000;
     	boolean readable = false;
     	
 //    	if(args[0].equals("-help")){
@@ -58,7 +59,7 @@ public class BuildDeBruijnGraph {
 	    					 "R/W Buffer Size: " + bufferSize + "\n" +
 	    					 "Output Format: " + (readable==true?"Text":"Binary") + "\n");
 		
-//			long maxID = partition.Run();
+			long maxID = partition.Run();
 			map.Run(numThreads);
 			
 //			long time1=0;
