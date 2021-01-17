@@ -5,15 +5,16 @@ import buildgraph.StringUtils;
 import java.io.IOException;
 
 public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXorOrdering {
-
+    private SignatureUtils signatureUtils;
     public UniversalHittingSetSignatureOrdering(int xor, int pivotLen) throws IOException {
         super(xor, pivotLen);
+        signatureUtils = new SignatureUtils();
     }
 
     @Override
     public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
-        boolean aAllowed = isAllowed(a, froma, froma + len);
-        boolean bAllowed = isAllowed(b, fromb, fromb + len);
+        boolean aAllowed = signatureUtils.isAllowed(a, froma, froma + len);
+        boolean bAllowed = signatureUtils.isAllowed(b, fromb, fromb + len);
 
         int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
         int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
@@ -26,10 +27,10 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
         int min_pos = from;
         int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;
-        boolean jAllowed, prevAllowed = isAllowed(a, min_pos, min_pos+pivotLen);
+        boolean jAllowed, prevAllowed = signatureUtils.isAllowed(a, min_pos, min_pos+pivotLen);
         for (int i = from + 1; i <= to - pivotLen; i++) {
             j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & pivotLengthToHexRepresentation.get(pivotLen);
-            jAllowed = isAllowed(a, i, i+pivotLen);
+            jAllowed = signatureUtils.isAllowed(a, i, i+pivotLen);
             if (((uhsBits[j >> 3] >> (j & 0b111)) & 1) == 1) {
                 if (strcmpSignature(prev, j, prevAllowed, jAllowed) > 0) {
                     min_pos = i;
@@ -64,23 +65,6 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
 
     }
 
-    private boolean isAllowed(char[] a, int from, int to) {
-        if (a[from] == 'A' && a[from + 2] == 'A') {
-            if (a[from + 1] == 'C' || a[from + 1] == 'A') {
-                return false;
-            }
-        } else if (a[to - 1] == 'T' && a[to - 3] == 'T') {
-            if (a[to - 2] == 'T' || a[to - 2] == 'G') {
-                return false;
-            }
-        }
-        for (int i = from + 2; i < to - 1; i++) {
-            if (a[i] == 'A' && a[i + 1] == 'A') {
-                return false;
-            }
-        }
-        return true;
-    }
 
 
 }

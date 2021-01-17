@@ -2,6 +2,7 @@ package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
 import buildgraph.Ordering.LexicographicOrdering;
+import buildgraph.Ordering.LexicographicSignatureOrdering;
 import buildgraph.Ordering.UniversalHittingSetSignatureOrdering;
 
 import java.io.IOException;
@@ -49,8 +50,9 @@ public class BuildDeBruijnGraph {
     		}
     	}
 
-		IOrdering ordering = new UniversalHittingSetSignatureOrdering(0, pivot_len);
+//		IOrdering ordering = new UniversalHittingSetSignatureOrdering(0, pivot_len);
 //		IOrdering ordering = new LexicographicOrdering(pivot_len);
+		IOrdering ordering = new LexicographicSignatureOrdering(pivot_len);
 		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
 		Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 	
@@ -69,17 +71,17 @@ public class BuildDeBruijnGraph {
 			long maxID = partition.Run();
 			map.Run(numThreads);
 			
-			long time1=0;			
-			long t1 = System.currentTimeMillis();
-			System.out.println("Merge IDReplaceTables Begin!");	
-			String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-			Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
-			long t2 = System.currentTimeMillis();
-			time1 = (t2-t1)/1000;
-			System.out.println("Time used for merging: " + time1 + " seconds!");
-			
-			Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-			replace.Run(readable);
+//			long time1=0;
+//			long t1 = System.currentTimeMillis();
+//			System.out.println("Merge IDReplaceTables Begin!");
+//			String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+//			Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
+//			long t2 = System.currentTimeMillis();
+//			time1 = (t2-t1)/1000;
+//			System.out.println("Time used for merging: " + time1 + " seconds!");
+//
+//			Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+//			replace.Run(readable);
 			
 		
 		}
