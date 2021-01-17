@@ -1,18 +1,48 @@
 package buildgraph.Ordering;
 
+import buildgraph.StringUtils;
+
+import java.io.IOException;
+
 public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXorOrdering {
 
-    private int minDecimalForNotStartingWithACA;
-    private int maxDecimalForNotEndingWithTGT;
-
-    public UniversalHittingSetSignatureOrdering(int xor, int pivotLen) {
+    public UniversalHittingSetSignatureOrdering(int xor, int pivotLen) throws IOException {
         super(xor, pivotLen);
-        setBoundaries();
     }
 
+    @Override
+    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
+        boolean aAllowed = isAllowed(a, froma, froma + len);
+        boolean bAllowed = isAllowed(b, fromb, fromb + len);
+
+        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
+        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
+        return strcmpSignature(x, y, aAllowed, bAllowed);
+
+    }
 
     @Override
-    public int strcmp(int x, int y) {
+    public int findSmallest(char[] a, int from, int to) {
+        int min_pos = from;
+        int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
+        int prev = j;
+        boolean jAllowed, prevAllowed = isAllowed(a, min_pos, min_pos+pivotLen);
+        for (int i = from + 1; i <= to - pivotLen; i++) {
+            j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & pivotLengthToHexRepresentation.get(pivotLen);
+            jAllowed = isAllowed(a, i, i+pivotLen);
+            if (((uhsBits[j >> 3] >> (j & 0b111)) & 1) == 1) {
+                if (strcmpSignature(prev, j, prevAllowed, jAllowed) > 0) {
+                    min_pos = i;
+                    prev = j;
+                }
+
+            }
+            prevAllowed = jAllowed;
+        }
+        return min_pos;
+    }
+
+    private int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) {
         int baseCompareValue = strcmpBase(x, y);
         if (baseCompareValue != BOTH_IN_UHS) {
             return baseCompareValue;
@@ -20,16 +50,13 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
 
         // from down here - both in UHS
 
-        if (x < minDecimalForNotStartingWithACA || x > maxDecimalForNotEndingWithTGT) {
-            if (maxDecimalForNotEndingWithTGT >= y && y >= minDecimalForNotStartingWithACA) {
-                return 1;
-            }
-        } else if (y < minDecimalForNotStartingWithACA || y > maxDecimalForNotEndingWithTGT) {
-            if (maxDecimalForNotEndingWithTGT >= x && x >= minDecimalForNotStartingWithACA) {
-                return -1;
-            }
+        if (!xAllowed && yAllowed) {
+            return 1;
+        } else if (!yAllowed && xAllowed) {
+            return -1;
         }
 
+        // both allowed or both not allowed
         if ((x ^ xor) < (y ^ xor))
             return -1;
         else
@@ -37,17 +64,23 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
 
     }
 
-    private void setBoundaries() {
-        char[] ACA = new char[pivotLen];
-        ACA[0] = 'A';
-        ACA[1] = 'C';
-        ACA[2] = 'A';
-        for (int i = 3; i < pivotLen; i++) {
-            ACA[i] = 'T';
+    private boolean isAllowed(char[] a, int from, int to) {
+        if (a[from] == 'A' && a[from + 2] == 'A') {
+            if (a[from + 1] == 'C' || a[from + 1] == 'A') {
+                return false;
+            }
+        } else if (a[to - 1] == 'T' && a[to - 3] == 'T') {
+            if (a[to - 2] == 'T' || a[to - 2] == 'G') {
+                return false;
+            }
         }
-        int maxValueOfACA = stringUtils.getDecimal(ACA, 0, pivotLen);
-        minDecimalForNotStartingWithACA = maxValueOfACA + 1;
-        maxDecimalForNotEndingWithTGT = (((int) Math.pow(4, pivotLen)) - 1) - maxValueOfACA - 1;
+        for (int i = from + 2; i < to - 1; i++) {
+            if (a[i] == 'A' && a[i + 1] == 'A') {
+                return false;
+            }
+        }
+        return true;
     }
+
 
 }

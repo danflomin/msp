@@ -2,7 +2,7 @@ package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
 import buildgraph.Ordering.LexicographicOrdering;
-
+import buildgraph.Ordering.UniversalHittingSetOrderingBase;
 
 import java.io.*;
 
@@ -24,6 +24,8 @@ public class Partition {
 
     private StringUtils stringUtils;
 
+    private int numOpenFiles;
+
 
     public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering) {
         this.k = kk;
@@ -34,26 +36,17 @@ public class Partition {
         this.readLen = readLen;
         this.ordering = ordering;
         this.stringUtils = new StringUtils();
+        this.numOpenFiles = 0;
     }
 
 
-    private int findSmallest(char[] a, int from, int to) {
 
-        int min_pos = from;
-
-        for (int i = from + 1; i <= to - pivotLen; i++) {
-            if (ordering.strcmp(a, a, min_pos, i, pivotLen) > 0)
-                min_pos = i;
-        }
-
-        return min_pos;
-    }
 
     private int findPosOfMin(char[] a, char[] b, int from, int to, int[] flag) {
 
         int len = a.length;
-        int pos1 = findSmallest(a, from, to);
-        int pos2 = findSmallest(b, len - to, len - from);
+        int pos1 = ordering.findSmallest(a, from, to);
+        int pos2 = ordering.findSmallest(b, len - to, len - from);
 
         if (ordering.strcmp(a, b, pos1, pos2, pivotLen) < 0) {
             flag[0] = 0;
@@ -88,10 +81,6 @@ public class Partition {
         if (!dir.exists())
             dir.mkdir();
 
-        for (int i = 0; i < numOfBlocks; i++) {
-            fwG[i] = new FileWriter("Nodes/nodes" + i);
-            bfwG[i] = new BufferedWriter(fwG[i], bufSize);
-        }
 
         while ((describeline = bfrG.readLine()) != null) {
 
@@ -128,9 +117,7 @@ public class Partition {
                             subend = i - 1 + k;
 
 
-                            bfwG[prepos].write(lineCharArray, substart, subend - substart);
-                            bfwG[prepos].write("\t" + outcnt);
-                            bfwG[prepos].newLine();
+                            writeToFile(prepos, substart, subend, lineCharArray, outcnt);
 
                             substart = i;
                             outcnt = cnt;
@@ -140,46 +127,56 @@ public class Partition {
 
                         if (ordering.strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen) < 0) {
                             if (ordering.strcmp(lineCharArray, flag[0] == 0 ? lineCharArray : revCharArray, k + i - pivotLen, min_pos, pivotLen) < 0) {
-
-                                int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
-
-                                min_pos = k + i - pivotLen;
-
-                                if (temp != calPosNew(lineCharArray, min_pos, min_pos + pivotLen)) {
-                                    prepos = temp;
-                                    subend = i - 1 + k;
-
-                                    bfwG[prepos].write(lineCharArray, substart, subend - substart);
-                                    bfwG[prepos].write("\t" + outcnt);
-                                    bfwG[prepos].newLine();
-
-                                    substart = i;
-                                    outcnt = cnt;
+                                boolean enter = true;
+                                if(ordering instanceof UniversalHittingSetOrderingBase){
+                                    if(!((UniversalHittingSetOrderingBase)ordering).isInUHS(lineCharArray, k+i-pivotLen, k+i)){
+                                        enter = false;
+                                    }
                                 }
+                                if(enter){
+                                    int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
 
-                                flag[0] = 0;
+                                    min_pos = k + i - pivotLen;
 
+                                    if (temp != calPosNew(lineCharArray, min_pos, min_pos + pivotLen)) {
+                                        prepos = temp;
+                                        subend = i - 1 + k;
+
+                                        writeToFile(prepos, substart, subend, lineCharArray, outcnt);
+
+                                        substart = i;
+                                        outcnt = cnt;
+                                    }
+
+                                    flag[0] = 0;
+                                }
                             }
                         } else {
                             if (ordering.strcmp(revCharArray, flag[0] == 0 ? lineCharArray : revCharArray, len - i - k, min_pos, pivotLen) < 0) {
-
-                                int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
-
-                                min_pos = -k - i + len;
-
-                                if (temp != calPosNew(revCharArray, min_pos, min_pos + pivotLen)) {
-                                    prepos = temp;
-                                    subend = i - 1 + k;
-
-                                    bfwG[prepos].write(lineCharArray, substart, subend - substart);
-                                    bfwG[prepos].write("\t" + outcnt);
-                                    bfwG[prepos].newLine();
-
-                                    substart = i;
-                                    outcnt = cnt;
+                                boolean enter = true;
+                                if(ordering instanceof UniversalHittingSetOrderingBase){
+                                    if(!((UniversalHittingSetOrderingBase)ordering).isInUHS(revCharArray, len-i-k, len-i-k+pivotLen)){
+                                        enter = false;
+                                    }
                                 }
+                                if(enter){
+                                    int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
 
-                                flag[0] = 1;
+                                    min_pos = -k - i + len;
+
+                                    if (temp != calPosNew(revCharArray, min_pos, min_pos + pivotLen)) {
+                                        prepos = temp;
+                                        subend = i - 1 + k;
+
+                                        writeToFile(prepos, substart, subend, lineCharArray, outcnt);
+
+                                        substart = i;
+                                        outcnt = cnt;
+                                    }
+
+                                    flag[0] = 1;
+
+                                }
 
 
                             }
@@ -191,23 +188,59 @@ public class Partition {
                 subend = len;
                 prepos = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
 
-                bfwG[prepos].write(lineCharArray, substart, subend - substart);
-                bfwG[prepos].write("\t" + outcnt);
-                bfwG[prepos].newLine();
+                writeToFile(prepos, substart, subend, lineCharArray, outcnt);
             }
         }
 
         System.out.println("Largest ID is " + cnt);
 
-        for (int i = 0; i < numOfBlocks; i++) {
-            bfwG[i].close();
-            fwG[i].close();
+        for (int i = 0; i < bfwG.length; i++) {
+            if (bfwG[i] != null) {
+                bfwG[i].close();
+                fwG[i].close();
+            }
         }
 
         bfrG.close();
         frG.close();
 
         return cnt;
+    }
+
+    private void tryCreateWriterForPmer(int prepos) throws IOException {
+        if (numOpenFiles == 16000) {
+            for (int i = 0; i < bfwG.length; i++) {
+                if (bfwG[i] != null) {
+                    bfwG[i].close();
+                    fwG[i].close();
+                    bfwG[i] = null;
+                    fwG[i] = null;
+                }
+            }
+            Runtime.getRuntime().gc();
+            numOpenFiles = 0;
+        }
+
+
+
+
+        if (bfwG[prepos] == null) {
+            fwG[prepos] = new FileWriter("Nodes/nodes" + prepos, true);
+            bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
+            numOpenFiles += 1;
+        }
+
+
+    }
+
+    private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
+        tryCreateWriterForPmer(prepos);
+
+        BufferedWriter writer = bfwG[prepos];
+
+        writer.write(lineCharArray, substart, subend - substart);
+        writer.write("\t" + outcnt);
+        writer.newLine();
     }
 
     public long Run() throws Exception {
@@ -258,7 +291,7 @@ public class Partition {
             }
         }
 
-        IOrdering ordering = new LexicographicOrdering();
+        IOrdering ordering = new LexicographicOrdering(pivot_len);
         Partition bdgraph = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
 
         try {

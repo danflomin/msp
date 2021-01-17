@@ -1,23 +1,34 @@
 package buildgraph.Ordering;
 
-public class LexicographicOrdering implements IOrdering{
+public class LexicographicOrdering implements IOrdering {
+
+    private int pivotLen;
+
+    public LexicographicOrdering(int pivotLen) {
+
+        this.pivotLen = pivotLen;
+    }
+
+
     @Override
-    public int strcmp(int x, int y) {
-        if(x<y){
-            return -1;
+    public int findSmallest(char[] a, int from, int to) {
+
+        int min_pos = from;
+
+        for (int i = from + 1; i <= to - pivotLen; i++) {
+            if (strcmp(a, a, min_pos, i, pivotLen) > 0)
+                min_pos = i;
         }
-        else if(x>y){
-            return 1;
-        }
-        return 0;
+
+        return min_pos;
     }
 
     @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len){
-        for(int i = 0; i < len; i++){
-            if(a[froma+i] < b[fromb+i])
+    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
+        for (int i = 0; i < len; i++) {
+            if (a[froma + i] < b[fromb + i])
                 return -1;
-            else if(a[froma+i] > b[fromb+i])
+            else if (a[froma + i] > b[fromb + i])
                 return 1;
         }
         return 0;

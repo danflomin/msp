@@ -2,22 +2,26 @@ package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
 import buildgraph.Ordering.LexicographicOrdering;
+import buildgraph.Ordering.UniversalHittingSetSignatureOrdering;
+
+import java.io.IOException;
 
 public class BuildDeBruijnGraph {
 	
-	public static void main(String[] args){
+	public static void main(String[] args) throws IOException {
     	
-    	String infile = "E:\\test.txt";
-    	int k = 15, numBlocks = 256, pivot_len = 12, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 1000000;
+    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
+    	int k = 60, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 8000000;
+    	int numBlocks = (int)Math.pow(4, pivot_len);//256;
     	boolean readable = false;
     	
-    	if(args[0].equals("-help")){
+    	if(args.length > 0 && args[0].equals("-help")){
     		System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
-	        			       "Options Available: \n" + 
-	        			       "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" + 
-	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" + 
+	        			       "Options Available: \n" +
+	        			       "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" +
+	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
 	        			       "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
-	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" + 
+	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" +
 	        			       "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
     		return;
     	}
@@ -45,7 +49,8 @@ public class BuildDeBruijnGraph {
     		}
     	}
 
-		IOrdering ordering = new LexicographicOrdering();
+		IOrdering ordering = new UniversalHittingSetSignatureOrdering(0, pivot_len);
+//		IOrdering ordering = new LexicographicOrdering(pivot_len);
 		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
 		Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 	

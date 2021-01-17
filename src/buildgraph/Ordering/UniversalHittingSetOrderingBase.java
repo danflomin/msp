@@ -5,6 +5,8 @@ import buildgraph.StringUtils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.util.HashMap;
 
 public abstract class UniversalHittingSetOrderingBase implements IOrdering {
 
@@ -14,23 +16,32 @@ public abstract class UniversalHittingSetOrderingBase implements IOrdering {
     protected static final int BOTH_IN_UHS = 824;
     protected int pivotLen;
 
-    public UniversalHittingSetOrderingBase(int pivotLen) {
+    protected static HashMap<Integer, Integer> pivotLengthToHexRepresentation = new HashMap<Integer, Integer>(){{
+        put(8, 0x0000ffff);
+        put(10, 0x000fffff);
+        put(12, 0x00ffffff);
+    }
+
+    };
+
+    public UniversalHittingSetOrderingBase(int pivotLen) throws IOException{
         this.pivotLen = pivotLen;
-        try {
-            uhsBits = uhsBitSet(pivotLen);
-        } catch (Exception e) {
-        }
         stringUtils = new StringUtils();
+        uhsBits = uhsBitSet(pivotLen);
     }
 
 
-    protected boolean isInUHS(int pmerDecimal) {
+    public boolean isInUHS(int pmerDecimal) {
         int pmerDecimalDiv8 = pmerDecimal >> 3;
         int pmerDecimalMod8 = pmerDecimal & 0b111;
         if (((this.uhsBits[pmerDecimalDiv8] >> (pmerDecimalMod8)) & 1) == 1) {
             return true;
         }
         return false;
+    }
+
+    public boolean isInUHS(char[] a, int from, int to) {
+        return isInUHS(stringUtils.getDecimal(a, from, to));
     }
 
     protected int strcmpBase(int x, int y) {
@@ -45,14 +56,6 @@ public abstract class UniversalHittingSetOrderingBase implements IOrdering {
             return 1;
         }
         return BOTH_IN_UHS;
-    }
-
-
-    @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
-        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
-        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
-        return strcmp(x, y);
     }
 
     private byte[] uhsBitSet(int pivotLen) throws IOException {
