@@ -1,5 +1,8 @@
 package buildgraph;
 
+import buildgraph.Ordering.IOrdering;
+import buildgraph.Ordering.LexicographicOrdering;
+
 import java.io.*;
 
 public class Partition{
@@ -16,17 +19,19 @@ public class Partition{
 	private BufferedWriter[] bfwG;
 	
 	private int readLen;
-	
+	private IOrdering ordering;
+
 	private static int[] valTable = new int[]{0,-1,1,-1,-1,-1,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3};
 	private static char[] twinTable = new char[]{'T','0','G','0','0','0','C','0','0','0','0','0','0','0','0','0','0','0','0','A'};
 
-	public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen){
+	public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering){
 		this.k = kk;
 		this.inputfile = infile;
 		this.numOfBlocks = numberOfBlocks;
 		this.pivotLen = pivotLength;
 		this.bufSize = bufferSize;
 		this.readLen = readLen;
+		this.ordering = ordering;
 	}
 	
 	private boolean isReadLegal(char[] line){
@@ -38,22 +43,13 @@ public class Partition{
 		return true;
 	}
 	
-	private int strcmp(char[] a, char[] b, int froma, int fromb, int len){
-		for(int i = 0; i < len; i++){
-			if(a[froma+i] < b[fromb+i])
-				return -1;
-			else if(a[froma+i] > b[fromb+i])
-				return 1;
-		}
-		return 0;
-	}
-	
+
 	private int findSmallest(char[] a, int from, int to){
 		
 		int min_pos = from;
 		
 		for(int i=from+1; i<=to-pivotLen; i++){
-			if(strcmp(a, a, min_pos, i, pivotLen)>0)
+			if(ordering.strcmp(a, a, min_pos, i, pivotLen)>0)
 				min_pos = i;
 		}
 		
@@ -66,7 +62,7 @@ public class Partition{
 		int pos1 = findSmallest(a,from,to);
 		int pos2 = findSmallest(b,len - to, len - from);
 		
-		if(strcmp(a,b,pos1,pos2,pivotLen)<0){
+		if(ordering.strcmp(a,b,pos1,pos2,pivotLen)<0){
 			flag[0] = 0;
 			return pos1;
 		}
@@ -164,8 +160,8 @@ public class Partition{
 					
 					else{
 						
-						if(strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen)<0){
-							if(strcmp(lineCharArray, flag[0]==0?lineCharArray:revCharArray, k + i - pivotLen, min_pos, pivotLen)<0){
+						if(ordering.strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen)<0){
+							if(ordering.strcmp(lineCharArray, flag[0]==0?lineCharArray:revCharArray, k + i - pivotLen, min_pos, pivotLen)<0){
 								
 								int temp = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
 								
@@ -188,7 +184,7 @@ public class Partition{
 							}
 						}
 						else{
-							if(strcmp(revCharArray, flag[0]==0?lineCharArray:revCharArray, len - i - k, min_pos, pivotLen)<0){
+							if(ordering.strcmp(revCharArray, flag[0]==0?lineCharArray:revCharArray, len - i - k, min_pos, pivotLen)<0){
 								
 								int temp = (flag[0]==0 ? calPosNew(lineCharArray,min_pos,min_pos+pivotLen):calPosNew(revCharArray,min_pos,min_pos+pivotLen));
 								
@@ -285,8 +281,8 @@ public class Partition{
     		}
     	}
     	
-		
-		Partition bdgraph = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen);
+		IOrdering ordering = new LexicographicOrdering();
+		Partition bdgraph = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
 	
 		try{
 			

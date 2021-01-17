@@ -1,5 +1,8 @@
 package buildgraph;
 
+import buildgraph.Ordering.IOrdering;
+import buildgraph.Ordering.LexicographicOrdering;
+
 public class BuildDeBruijnGraph {
 	
 	public static void main(String[] args){
@@ -41,9 +44,9 @@ public class BuildDeBruijnGraph {
     			return;
     		}
     	}
-    	
-		
-		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen);
+
+		IOrdering ordering = new LexicographicOrdering();
+		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
 		Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 	
 		try{
