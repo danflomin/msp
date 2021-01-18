@@ -1,20 +1,29 @@
 package buildgraph;
 
-import buildgraph.Ordering.IOrdering;
-import buildgraph.Ordering.LexicographicOrdering;
-import buildgraph.Ordering.LexicographicSignatureOrdering;
-import buildgraph.Ordering.UniversalHittingSetSignatureOrdering;
+import buildgraph.Ordering.*;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.util.AbstractMap;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 
 public class BuildDeBruijnGraph {
 	
 	public static void main(String[] args) throws IOException {
     	
-    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
-    	int k = 60, pivot_len = 8, bufferSize = 8192, readLen = 101, numThreads = 1, hsmapCapacity = 8000000;
+//    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
+//		String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
+		String infile = "/home/gaga/data-scratch/yaelbenari/datas/breastCancer.fastq";
+    	int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 4, hsmapCapacity = 8000000;
+    	int readLen = 100;
     	int numBlocks = (int)Math.pow(4, pivot_len);//256;
     	boolean readable = false;
+    	String orderingName = "uhs_sig";
+		int xor = 0; //11101101;
     	
     	if(args.length > 0 && args[0].equals("-help")){
     		System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
@@ -23,6 +32,7 @@ public class BuildDeBruijnGraph {
 	        			       "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
 	        			       "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
 	        			       "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" +
+					           "[-o order] : lexico or sig or uhs or uhs_sig" + "\n" +
 	        			       "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
     		return;
     	}
@@ -34,8 +44,10 @@ public class BuildDeBruijnGraph {
     			k = new Integer(args[i+1]);
     		else if(args[i].equals("-NB"))
     			numBlocks = new Integer(args[i+1]);
-    		else if(args[i].equals("-p"))
-    			pivot_len = new Integer(args[i+1]);
+			else if(args[i].equals("-o"))
+				orderingName = args[i+1];
+//    		else if(args[i].equals("-p"))
+//    			pivot_len = new Integer(args[i+1]);
     		else if(args[i].equals("-b"))
     			bufferSize = new Integer(args[i+1]);
     		else if(args[i].equals("-L"))
@@ -50,9 +62,18 @@ public class BuildDeBruijnGraph {
     		}
     	}
 
-//		IOrdering ordering = new UniversalHittingSetSignatureOrdering(0, pivot_len);
-//		IOrdering ordering = new LexicographicOrdering(pivot_len);
-		IOrdering ordering = new LexicographicSignatureOrdering(pivot_len);
+		UniversalFrequencySignatureOrdering z = new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false);
+
+    	HashMap<String, IOrdering> orderingNames = new HashMap<String, IOrdering>(){{
+    		put("lexico", new LexicographicOrdering(pivot_len));
+    		put("sig", new LexicographicSignatureOrdering(pivot_len));
+    		put("uhs", new UniversalHittingSetXorOrdering(xor, pivot_len));
+    		put("uhs_sig", new UniversalHittingSetSignatureOrdering(xor, pivot_len));
+			put("uhs_freq", z);
+		}};
+
+
+		IOrdering ordering = orderingNames.get(orderingName);
 		Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
 		Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 	
@@ -66,10 +87,17 @@ public class BuildDeBruijnGraph {
 	    					 "Pivot Length: " + pivot_len + "\n" +
 	    					 "# Of Threads: " + numThreads + "\n" +
 	    					 "R/W Buffer Size: " + bufferSize + "\n" +
+					         "Ordering: " + orderingName + "\n" +
+					         "x xor: " + xor + "\n" +
 	    					 "Output Format: " + (readable==true?"Text":"Binary") + "\n");
 		
 			long maxID = partition.Run();
-			map.Run(numThreads);
+			AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+			BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_"+"kmers");
+
+			HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
+			BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_"+"bytes");
+
 			
 //			long time1=0;
 //			long t1 = System.currentTimeMillis();
@@ -90,6 +118,50 @@ public class BuildDeBruijnGraph {
 			E.printStackTrace();
 		}
 		
-	}	
+	}
+
+	public static HashMap<Long, Long> getBytesPerFile(){
+		File folder = new File("./Nodes");
+		File[] listOfFiles = folder.listFiles();
+
+		HashMap<Long, Long> bytesPerFile = new HashMap<>();
+
+		for (int i = 0; i < listOfFiles.length; i++) {
+			if (listOfFiles[i].isFile())
+				bytesPerFile.put(Long.parseLong(listOfFiles[i].getName().replace("nodes", "")), listOfFiles[i].length());
+		}
+		return bytesPerFile;
+	}
+
+	public static void writeToFile(AbstractMap<Long, Long> data, String fileName){
+		File file = new File(fileName);
+
+		BufferedWriter bf = null;;
+
+		try{
+			bf = new BufferedWriter( new FileWriter(file) );
+
+			bf.write("x = {");
+			bf.newLine();
+
+			//iterate map entries
+			for(java.util.Map.Entry<Long, Long> entry : data.entrySet()){
+				bf.write( entry.getKey() + ":" + entry.getValue() + ",");
+				bf.newLine();
+			}
+			bf.write("}");
+			bf.flush();
+
+		}catch(IOException e){
+			e.printStackTrace();
+		}finally{
+
+			try{
+				//always close the writer
+				bf.close();
+			}catch(Exception e){}
+		}
+
+	}
 
 }

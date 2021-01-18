@@ -12,7 +12,7 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
     }
 
     @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
+    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
         boolean aAllowed = signatureUtils.isAllowed(a, froma, froma + len);
         boolean bAllowed = signatureUtils.isAllowed(b, fromb, fromb + len);
 
@@ -23,7 +23,7 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
     }
 
     @Override
-    public int findSmallest(char[] a, int from, int to) {
+    public int findSmallest(char[] a, int from, int to) throws IOException {
         int min_pos = from;
         int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;
@@ -43,7 +43,7 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
         return min_pos;
     }
 
-    private int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) {
+    protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
         int baseCompareValue = strcmpBase(x, y);
         if (baseCompareValue != BOTH_IN_UHS) {
             return baseCompareValue;

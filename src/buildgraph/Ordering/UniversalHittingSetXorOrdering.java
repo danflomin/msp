@@ -13,14 +13,14 @@ public class UniversalHittingSetXorOrdering extends UniversalHittingSetOrderingB
     }
 
     @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
+    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
         int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
         int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
         return strcmp(x, y);
     }
 
     @Override
-    public int findSmallest(char[] a, int from, int to) {
+    public int findSmallest(char[] a, int from, int to) throws IOException {
         int min_pos = from;
         int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;

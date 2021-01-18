@@ -42,7 +42,7 @@ public class Partition {
 
 
 
-    private int findPosOfMin(char[] a, char[] b, int from, int to, int[] flag) {
+    private int findPosOfMin(char[] a, char[] b, int from, int to, int[] flag) throws IOException {
 
         int len = a.length;
         int pos1 = ordering.findSmallest(a, from, to);
