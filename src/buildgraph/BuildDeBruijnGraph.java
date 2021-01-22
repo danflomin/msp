@@ -17,10 +17,12 @@ public class BuildDeBruijnGraph {
     	
 //    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-		String infile = "/home/gaga/data-scratch/yaelbenari/datas/breastCancer.fastq";
-    	int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 4, hsmapCapacity = 8000000;
-    	int readLen = 100;
-    	int numBlocks = (int)Math.pow(4, pivot_len);//256;
+//		String infile = "/home/gaga/data-scratch/yaelbenari/datas/breastCancer.fastq";
+		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
+
+    	int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 1, hsmapCapacity = 10000000;
+    	int readLen = 124;
+    	int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
     	boolean readable = false;
     	String orderingName = "uhs_sig";
 		int xor = 0; //11101101;
@@ -38,38 +40,38 @@ public class BuildDeBruijnGraph {
     	}
     	
     	for(int i=0; i<args.length; i+=2){
-    		if(args[i].equals("-in"))
-    			infile = args[i+1];
-    		else if(args[i].equals("-k"))
-    			k = new Integer(args[i+1]);
-    		else if(args[i].equals("-NB"))
-    			numBlocks = new Integer(args[i+1]);
-			else if(args[i].equals("-o"))
+//    		if(args[i].equals("-in"))
+//    			infile = args[i+1];
+//    		else if(args[i].equals("-k"))
+//    			k = new Integer(args[i+1]);
+//    		else if(args[i].equals("-NB"))
+//    			numBlocks = new Integer(args[i+1]);
+			//else
+				if(args[i].equals("-o"))
 				orderingName = args[i+1];
 //    		else if(args[i].equals("-p"))
 //    			pivot_len = new Integer(args[i+1]);
-    		else if(args[i].equals("-b"))
-    			bufferSize = new Integer(args[i+1]);
-    		else if(args[i].equals("-L"))
-    			readLen = new Integer(args[i+1]);
-    		else if(args[i].equals("-t"))
-    			numThreads = new Integer(args[i+1]);
-    		else if(args[i].equals("-r"))
-    			readable = new Boolean(args[i+1]);
+//    		else if(args[i].equals("-b"))
+//    			bufferSize = new Integer(args[i+1]);
+//    		else if(args[i].equals("-L"))
+//    			readLen = new Integer(args[i+1]);
+//    		else if(args[i].equals("-t"))
+//    			numThreads = new Integer(args[i+1]);
+//    		else if(args[i].equals("-r"))
+//    			readable = new Boolean(args[i+1]);
     		else{
     			System.out.println("Wrong with arguments. Abort!");
     			return;
     		}
     	}
 
-		UniversalFrequencySignatureOrdering z = new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false);
-
     	HashMap<String, IOrdering> orderingNames = new HashMap<String, IOrdering>(){{
     		put("lexico", new LexicographicOrdering(pivot_len));
     		put("sig", new LexicographicSignatureOrdering(pivot_len));
     		put("uhs", new UniversalHittingSetXorOrdering(xor, pivot_len));
-    		put("uhs_sig", new UniversalHittingSetSignatureOrdering(xor, pivot_len));
-			put("uhs_freq", z);
+    		put("uhs_sig", new UniversalHittingSetSignatureOrdering(xor, pivot_len, true, true));
+			put("uhs_freq", new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, false));
+			put("uhs_freq_sig", new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, true));
 		}};
 
 
@@ -99,17 +101,17 @@ public class BuildDeBruijnGraph {
 			BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_"+"bytes");
 
 			
-//			long time1=0;
-//			long t1 = System.currentTimeMillis();
-//			System.out.println("Merge IDReplaceTables Begin!");
-//			String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-//			Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
-//			long t2 = System.currentTimeMillis();
-//			time1 = (t2-t1)/1000;
-//			System.out.println("Time used for merging: " + time1 + " seconds!");
-//
-//			Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-//			replace.Run(readable);
+			long time1=0;
+			long t1 = System.currentTimeMillis();
+			System.out.println("Merge IDReplaceTables Begin!");
+			String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+			Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
+			long t2 = System.currentTimeMillis();
+			time1 = (t2-t1)/1000;
+			System.out.println("Time used for merging: " + time1 + " seconds!");
+
+			Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+			replace.Run(readable);
 			
 		
 		}

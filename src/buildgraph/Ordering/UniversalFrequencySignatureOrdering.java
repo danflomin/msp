@@ -4,23 +4,19 @@ import java.io.*;
 import java.util.HashMap;
 
 public class UniversalFrequencySignatureOrdering extends UniversalHittingSetSignatureOrdering {
-    private SignatureUtils signatureUtils;
     private String inputFile;
     private int readLen;
     private int bufSize;
     private long[] pmerFrequency;
-    private boolean useSignature;
     private boolean isInit;
 
-    public UniversalFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature) throws IOException {
-        super(0, pivotLen);
+    public UniversalFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, boolean useCache) throws IOException {
+        super(0, pivotLen, useSignature, useCache);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
         pmerFrequency = new long[(int)Math.pow(4, pivotLen)];
-        this.useSignature = useSignature;
         isInit = false;
-
     }
 
     protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
@@ -45,7 +41,13 @@ public class UniversalFrequencySignatureOrdering extends UniversalHittingSetSign
         }
 
         // both allowed or both not allowed
-        if(pmerFrequency[x] < pmerFrequency[y])
+        if(pmerFrequency[x] == pmerFrequency[y]){
+            if(x<y)
+                return -1;
+            else
+                return 1;
+        }
+        else if(pmerFrequency[x] < pmerFrequency[y])
             return -1;
         else
             return 1;

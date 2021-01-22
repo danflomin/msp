@@ -2,7 +2,7 @@ package buildgraph.Ordering;
 
 public class LexicographicOrdering implements IOrdering {
 
-    private int pivotLen;
+    protected int pivotLen;
 
     public LexicographicOrdering(int pivotLen) {
 

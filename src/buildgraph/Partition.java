@@ -40,8 +40,6 @@ public class Partition {
     }
 
 
-
-
     private int findPosOfMin(char[] a, char[] b, int from, int to, int[] flag) throws IOException {
 
         int len = a.length;
@@ -128,12 +126,12 @@ public class Partition {
                         if (ordering.strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen) < 0) {
                             if (ordering.strcmp(lineCharArray, flag[0] == 0 ? lineCharArray : revCharArray, k + i - pivotLen, min_pos, pivotLen) < 0) {
                                 boolean enter = true;
-                                if(ordering instanceof UniversalHittingSetOrderingBase){
-                                    if(!((UniversalHittingSetOrderingBase)ordering).isInUHS(lineCharArray, k+i-pivotLen, k+i)){
+                                if (ordering instanceof UniversalHittingSetOrderingBase) {
+                                    if (!((UniversalHittingSetOrderingBase) ordering).isInUHS(lineCharArray, k + i - pivotLen, k + i)) {
                                         enter = false;
                                     }
                                 }
-                                if(enter){
+                                if (enter) {
                                     int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
 
                                     min_pos = k + i - pivotLen;
@@ -154,12 +152,12 @@ public class Partition {
                         } else {
                             if (ordering.strcmp(revCharArray, flag[0] == 0 ? lineCharArray : revCharArray, len - i - k, min_pos, pivotLen) < 0) {
                                 boolean enter = true;
-                                if(ordering instanceof UniversalHittingSetOrderingBase){
-                                    if(!((UniversalHittingSetOrderingBase)ordering).isInUHS(revCharArray, len-i-k, len-i-k+pivotLen)){
+                                if (ordering instanceof UniversalHittingSetOrderingBase) {
+                                    if (!((UniversalHittingSetOrderingBase) ordering).isInUHS(revCharArray, len - i - k, len - i - k + pivotLen)) {
                                         enter = false;
                                     }
                                 }
-                                if(enter){
+                                if (enter) {
                                     int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
 
                                     min_pos = -k - i + len;
@@ -173,12 +171,8 @@ public class Partition {
                                         substart = i;
                                         outcnt = cnt;
                                     }
-
                                     flag[0] = 1;
-
                                 }
-
-
                             }
                         }
                     }
@@ -221,16 +215,11 @@ public class Partition {
             numOpenFiles = 0;
         }
 
-
-
-
         if (bfwG[prepos] == null) {
             fwG[prepos] = new FileWriter("Nodes/nodes" + prepos, true);
             bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
             numOpenFiles += 1;
         }
-
-
     }
 
     private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
@@ -244,9 +233,7 @@ public class Partition {
     }
 
     public long Run() throws Exception {
-
         long time1 = 0;
-
         long t1 = System.currentTimeMillis();
         System.out.println("Distribute Nodes Begin!");
         long maxID = DistributeNodes();
@@ -254,64 +241,6 @@ public class Partition {
         time1 = (t2 - t1) / 1000;
         System.out.println("Time used for distributing nodes: " + time1 + " seconds!");
         return maxID;
-
     }
 
-
-    public static void main(String[] args) {
-
-        String infile = "E:\\test.txt";
-        int k = 15, numBlocks = 256, pivot_len = 12, bufferSize = 8192, readLen = 101;
-
-        if (args[0].equals("-help")) {
-            System.out.print("Usage: java -jar Partition.jar -in InputPath -k k -L readLength[options]\n" +
-                    "Options Available: \n" +
-                    "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" +
-                    "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
-                    "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n");
-            return;
-        }
-
-        for (int i = 0; i < args.length; i += 2) {
-            if (args[i].equals("-in"))
-                infile = args[i + 1];
-            else if (args[i].equals("-k"))
-                k = new Integer(args[i + 1]);
-            else if (args[i].equals("-NB"))
-                numBlocks = new Integer(args[i + 1]);
-            else if (args[i].equals("-p"))
-                pivot_len = new Integer(args[i + 1]);
-            else if (args[i].equals("-b"))
-                bufferSize = new Integer(args[i + 1]);
-            else if (args[i].equals("-L"))
-                readLen = new Integer(args[i + 1]);
-            else {
-                System.out.println("Wrong with arguments. Abort!");
-                return;
-            }
-        }
-
-        IOrdering ordering = new LexicographicOrdering(pivot_len);
-        Partition bdgraph = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
-
-        try {
-
-            System.out.println("Program Configuration:");
-            System.out.print("Input File: " + infile + "\n" +
-                    "Kmer Length: " + k + "\n" +
-                    "Read Length: " + readLen + "\n" +
-                    "# Of Blocks: " + numBlocks + "\n" +
-                    "Pivot Length: " + pivot_len + "\n" +
-                    "R/W Buffer Size: " + bufferSize + "\n");
-
-            bdgraph.Run();
-
-        } catch (Exception E) {
-            System.out.println("Exception caught!");
-            E.printStackTrace();
-        }
-
-    }
 }
-	
-	

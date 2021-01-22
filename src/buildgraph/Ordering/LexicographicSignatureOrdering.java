@@ -6,15 +6,21 @@ import java.io.IOException;
 
 public class LexicographicSignatureOrdering extends LexicographicOrdering {
     private SignatureUtils signatureUtils;
+    private StringUtils stringUtils;
     public LexicographicSignatureOrdering(int pivotLen) throws IOException {
         super(pivotLen);
-        signatureUtils = new SignatureUtils();
+        signatureUtils = new SignatureUtils(pivotLen);
+        stringUtils = new StringUtils();
     }
 
     @Override
     public int strcmp(char[] a, char[] b, int froma, int fromb, int len) {
-        boolean aAllowed = signatureUtils.isAllowed(a, froma, froma + len);
-        boolean bAllowed = signatureUtils.isAllowed(b, fromb, fromb + len);
+//        boolean aAllowed = signatureUtils.isAllowed(a, froma, froma + len);
+//        boolean bAllowed = signatureUtils.isAllowed(b, fromb, fromb + len);
+        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
+        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
+        boolean aAllowed = signatureUtils.isAllowed(a, froma, x);
+        boolean bAllowed = signatureUtils.isAllowed(b, fromb, y);
 
         if (!aAllowed && bAllowed) {
             return 1;

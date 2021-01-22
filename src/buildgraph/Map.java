@@ -1,10 +1,7 @@
 package buildgraph;
 
 import java.io.*;
-import java.util.AbstractMap;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
@@ -23,8 +20,8 @@ public class Map{
 	
 	private long forAndVal;
 	private long forAndVal32;
-	
-	private static int[] valTable = new int[]{0,-1,1,-1,-1,-1,2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,3};
+
+	private static int[] valTable = StringUtils.valTable;
 
 	public Map(int kk, int numberOfBlocks, int bufferSize, int HScapacity){
 		this.k = kk;
@@ -38,10 +35,10 @@ public class Map{
 	
 	public class MyThread extends Thread{
 		private CountDownLatch threadsSignal;
-		private List<String> fileNames;
+		private HashSet<String> fileNames;
 		private ConcurrentHashMap<Long, Long> distinctKmersPerPartition;
 
-		public MyThread(CountDownLatch threadsSignal, List<String> fileNames, ConcurrentHashMap<Long, Long> distinctKmersPerPartition){
+		public MyThread(CountDownLatch threadsSignal, HashSet<String> fileNames, ConcurrentHashMap<Long, Long> distinctKmersPerPartition){
 			super();
 			this.threadsSignal = threadsSignal;
 			this.fileNames = fileNames;
@@ -82,10 +79,6 @@ public class Map{
 						continue;
 					}
 
-//					File file = new File("Nodes/nodes"+p);
-//					if(!file.exists()) {
-//						continue;
-//					}
 								
 					fr = new FileReader("Nodes/nodes"+p);
 					bfr = new BufferedReader(fr, bufSize);
@@ -200,7 +193,7 @@ public class Map{
 						}
 					}
 
-					System.out.println(p + " : " + nodes.size() + ",");
+					if(p%100 == 0) System.out.println(p);
 					distinctKmersPerPartition.put((long)p, (long)nodes.size());
 					
 					nodes.clear();
@@ -224,7 +217,7 @@ public class Map{
 	}
 	
 	
-	private AbstractMap<Long, Long> BuildMap(int threadNum, List<String> fileNames) throws Exception{
+	private AbstractMap<Long, Long> BuildMap(int threadNum, HashSet<String> fileNames) throws Exception{
 		CountDownLatch threadSignal = new CountDownLatch(threadNum);
 
 		ConcurrentHashMap<Long, Long> distinctKmersPerPartition = new ConcurrentHashMap<>();
@@ -241,7 +234,7 @@ public class Map{
 	public AbstractMap<Long, Long> Run(int numThreads) throws Exception{
 		long time1=0;
 
-		List<String> fileNames =  getNodesFileNames();
+		HashSet<String> fileNames =  getNodesFileNames();
 		
 		long t1 = System.currentTimeMillis();
 		System.out.println("Build Maps Begin!");	
@@ -254,7 +247,7 @@ public class Map{
 		
 	}
 
-	private List<String> getNodesFileNames(){
+	private HashSet<String> getNodesFileNames(){
 		File[] files = (new File("./Nodes")).listFiles();
 		List<String> fileNames = new LinkedList<>();
 		for(File file : files){
@@ -262,7 +255,7 @@ public class Map{
 				fileNames.add(file.getName());
 			}
 		}
-		return fileNames;
+		return new HashSet<>(fileNames);
 	}
 	
 	public static void main(String[] args){
