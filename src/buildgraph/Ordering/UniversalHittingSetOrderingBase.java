@@ -5,7 +5,6 @@ import buildgraph.StringUtils;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.net.Inet4Address;
 import java.util.HashMap;
 
 public abstract class UniversalHittingSetOrderingBase implements IOrdering {
@@ -82,6 +81,7 @@ public abstract class UniversalHittingSetOrderingBase implements IOrdering {
         }
         System.out.println(count);
         frG.close();
+
         return bits;
     }
 }

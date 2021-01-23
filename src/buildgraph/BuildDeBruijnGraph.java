@@ -22,7 +22,7 @@ public class BuildDeBruijnGraph {
 
     	int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 1, hsmapCapacity = 10000000;
     	int readLen = 124;
-    	int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
+    	int numBlocks = 4000;//(int)Math.pow(4, pivot_len);//256; 1000;//
     	boolean readable = false;
     	String orderingName = "uhs_sig";
 		int xor = 0; //11101101;
