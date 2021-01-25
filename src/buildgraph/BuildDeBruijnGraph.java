@@ -96,7 +96,6 @@ public class BuildDeBruijnGraph {
 	    					 "Output Format: " + (readable==true?"Text":"Binary") + "\n");
 		
 			long maxID = partition.Run();
-			Runtime.getRuntime().gc();
 
 			AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
 			BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_"+"kmers");

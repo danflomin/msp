@@ -207,9 +207,6 @@ public class Map{
 					fw = null;
 					bfr = null;
 					fr = null;
-
-//					Runtime.getRuntime().gc();
-					
 				}
 							
 			}catch(Exception E){
