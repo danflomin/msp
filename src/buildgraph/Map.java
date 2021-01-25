@@ -195,13 +195,20 @@ public class Map{
 
 					if(p%100 == 0) System.out.println(p);
 					distinctKmersPerPartition.put((long)p, (long)nodes.size());
-					
+
 					nodes.clear();
+					nodes = null;
 					
 					bfw.close();
 					fw.close();
 					bfr.close();
-					fr.close();	
+					fr.close();
+					bfw = null;
+					fw = null;
+					bfr = null;
+					fr = null;
+
+//					Runtime.getRuntime().gc();
 					
 				}
 							
