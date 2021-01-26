@@ -1,13 +1,13 @@
-package buildgraph.Ordering;
+package buildgraph.Ordering.UHS;
 
 import buildgraph.StringUtils;
 
 import java.io.IOException;
 
-public class UniversalHittingSetXorOrdering extends UniversalHittingSetOrderingBase{
+public class UHSXorOrdering extends UHSOrderingBase {
     protected int xor;
 
-    public UniversalHittingSetXorOrdering(int xor, int pivotLen) throws IOException {
+    public UHSXorOrdering(int xor, int pivotLen) throws IOException {
         super(pivotLen);
         this.xor = xor;
     }
@@ -16,7 +16,17 @@ public class UniversalHittingSetXorOrdering extends UniversalHittingSetOrderingB
     public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
         int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
         int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
+        if(x==y) return 0;
+
+        if(isRankInit){
+            if (rankOfPmer[x] < rankOfPmer[y]){
+                return -1;
+            }
+            return 1;
+        }
+
         return strcmp(x, y);
+
     }
 
     @Override

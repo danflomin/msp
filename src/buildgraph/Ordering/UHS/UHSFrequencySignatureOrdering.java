@@ -1,16 +1,15 @@
-package buildgraph.Ordering;
+package buildgraph.Ordering.UHS;
 
 import java.io.*;
-import java.util.HashMap;
 
-public class UniversalFrequencySignatureOrdering extends UniversalHittingSetSignatureOrdering {
+public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
     private String inputFile;
     private int readLen;
     private int bufSize;
     private long[] pmerFrequency;
     private boolean isInit;
 
-    public UniversalFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, boolean useCache) throws IOException {
+    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, boolean useCache) throws IOException {
         super(0, pivotLen, useSignature, useCache);
         this.inputFile = infile;
         this.readLen = readLen;

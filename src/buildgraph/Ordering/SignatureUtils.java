@@ -5,38 +5,39 @@ import java.util.HashMap;
 public class SignatureUtils {
 
     private int len;
-    protected Boolean[] isPmerAllowed;
+    protected byte[] isPmerAllowed;
 
     public SignatureUtils(int len){
         this.len = len;
-        isPmerAllowed = new Boolean[(int)Math.pow(4, len)];
+        isPmerAllowed = new byte[(int)Math.pow(4, len)];
     }
 
     public boolean isAllowed(char[] a, int from, int aDecimal) {
-        if(isPmerAllowed[aDecimal] != null){
-            return isPmerAllowed[aDecimal];
+        int isAllowed = isPmerAllowed[aDecimal];
+        if(isAllowed != 0){
+            return isAllowed == 1;
         }
 
         int lastIndex = from + len - 1;
         if (a[from] == 'A' && a[from + 2] == 'A') {
             if (a[from + 1] <= 'C') { // C or A
-                isPmerAllowed[aDecimal] = false;
+                isPmerAllowed[aDecimal] = -1;
                 return false;
             }
         } else if (a[lastIndex] == 'T' && a[lastIndex - 2] == 'T') {
             if (a[lastIndex - 1] >='G') { // G or T
-                isPmerAllowed[aDecimal] = false;
+                isPmerAllowed[aDecimal] = -1;
                 return false;
             }
         }
 
         for (int i = from + 2; i < lastIndex; i++) {
             if (a[i] == 'A' && a[i + 1] == 'A') {
-                isPmerAllowed[aDecimal] = false;
+                isPmerAllowed[aDecimal] = -1;
                 return false;
             }
         }
-        isPmerAllowed[aDecimal] = true;
+        isPmerAllowed[aDecimal] = 1;
         return true;
     }
 

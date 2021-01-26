@@ -1,8 +1,7 @@
 package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
-import buildgraph.Ordering.LexicographicOrdering;
-import buildgraph.Ordering.UniversalHittingSetOrderingBase;
+import buildgraph.Ordering.UHS.UHSOrderingBase;
 
 import java.io.*;
 
@@ -126,8 +125,8 @@ public class Partition {
                         if (ordering.strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen) < 0) {
                             if (ordering.strcmp(lineCharArray, flag[0] == 0 ? lineCharArray : revCharArray, k + i - pivotLen, min_pos, pivotLen) < 0) {
                                 boolean enter = true;
-                                if (ordering instanceof UniversalHittingSetOrderingBase) {
-                                    if (!((UniversalHittingSetOrderingBase) ordering).isInUHS(lineCharArray, k + i - pivotLen, k + i)) {
+                                if (ordering instanceof UHSOrderingBase) {
+                                    if (!((UHSOrderingBase) ordering).isInUHS(lineCharArray, k + i - pivotLen, k + i)) {
                                         enter = false;
                                     }
                                 }
@@ -152,8 +151,8 @@ public class Partition {
                         } else {
                             if (ordering.strcmp(revCharArray, flag[0] == 0 ? lineCharArray : revCharArray, len - i - k, min_pos, pivotLen) < 0) {
                                 boolean enter = true;
-                                if (ordering instanceof UniversalHittingSetOrderingBase) {
-                                    if (!((UniversalHittingSetOrderingBase) ordering).isInUHS(revCharArray, len - i - k, len - i - k + pivotLen)) {
+                                if (ordering instanceof UHSOrderingBase) {
+                                    if (!((UHSOrderingBase) ordering).isInUHS(revCharArray, len - i - k, len - i - k + pivotLen)) {
                                         enter = false;
                                     }
                                 }

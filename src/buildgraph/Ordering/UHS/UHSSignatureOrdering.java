@@ -1,39 +1,50 @@
-package buildgraph.Ordering;
+package buildgraph.Ordering.UHS;
 
+import buildgraph.Ordering.SignatureUtils;
 import buildgraph.StringUtils;
 
 import java.io.IOException;
-import java.util.HashMap;
 
-public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXorOrdering {
+public class UHSSignatureOrdering extends UHSXorOrdering {
     private SignatureUtils signatureUtils;
     protected boolean useSignature;
     private boolean useCache;
+    protected int xor;
 
 
 
-    public UniversalHittingSetSignatureOrdering(int xor, int pivotLen, boolean useSignature, boolean useCache) throws IOException {
+    public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature, boolean useCache) throws IOException {
         super(xor, pivotLen);
+        super(pivotLen);
+        xor = xor;
         this.useSignature = useSignature;
         this.useCache = useCache;
         signatureUtils = new SignatureUtils(pivotLen);
     }
 
+    public UHSSignatureOrdering(int pivotLen, boolean useSignature, boolean useCache) throws IOException {
+        this(0, pivotLen, useSignature, useCache);
+    }
+
     @Override
     public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
-//        boolean aAllowed = signatureUtils.isAllowed(a, froma, froma + len);
-//        boolean bAllowed = signatureUtils.isAllowed(b, fromb, fromb + len);
         int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
         int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
 
+        if(x==y) return 0;
+
+        if(isRankInit){
+            if (rankOfPmer[x] < rankOfPmer[y]){
+                return -1;
+            }
+            return 1;
+        }
 
         boolean aAllowed = true, bAllowed = true;
         if(useSignature){
             aAllowed = signatureUtils.isAllowed(a, froma, x);
             bAllowed = signatureUtils.isAllowed(b, fromb, y);
         }
-
-
 
         return strcmpSignature(x, y, aAllowed, bAllowed);
 
@@ -44,16 +55,15 @@ public class UniversalHittingSetSignatureOrdering extends UniversalHittingSetXor
         int min_pos = from;
         int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;
-//        boolean jAllowed, prevAllowed = signatureUtils.isAllowed(a, min_pos, min_pos+pivotLen);
-        boolean jAllowed = true;
-        boolean prevAllowed = signatureUtils.isAllowed(a, min_pos, prev);
+        boolean prevAllowed = signatureUtils.isAllowed(a, min_pos, prev), jAllowed = true;
+        int hexRepresentation = pivotLengthToHexRepresentation.get(pivotLen);
         for (int i = from + 1; i <= to - pivotLen; i++) {
-            j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & pivotLengthToHexRepresentation.get(pivotLen);
+            j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & hexRepresentation;
 
             if(useSignature)
                 jAllowed = signatureUtils.isAllowed(a, i, j);
 
-            if (((uhsBits[j >> 3] >> (j & 0b111)) & 1) == 1) {
+            if (isInUHS(j)) {
                 if (strcmpSignature(prev, j, prevAllowed, jAllowed) > 0) {
                     min_pos = i;
                     prev = j;

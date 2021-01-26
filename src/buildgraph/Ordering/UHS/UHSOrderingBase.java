@@ -1,19 +1,27 @@
-package buildgraph.Ordering;
+package buildgraph.Ordering.UHS;
 
+import buildgraph.Ordering.IOrdering;
 import buildgraph.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 
-public abstract class UniversalHittingSetOrderingBase implements IOrdering {
+public abstract class UHSOrderingBase implements IOrdering {
 
     protected byte[] uhsBits;
     protected StringUtils stringUtils;
 
     protected static final int BOTH_IN_UHS = 824;
     protected int pivotLen;
+
+    protected int[] rankOfPmer;
+    protected  boolean isRankInit;
+
 
     protected static HashMap<Integer, Integer> pivotLengthToHexRepresentation = new HashMap<Integer, Integer>(){{
         put(8, 0x0000ffff);
@@ -23,10 +31,15 @@ public abstract class UniversalHittingSetOrderingBase implements IOrdering {
 
     };
 
-    public UniversalHittingSetOrderingBase(int pivotLen) throws IOException{
+    public UHSOrderingBase(int pivotLen) throws IOException{
         this.pivotLen = pivotLen;
         stringUtils = new StringUtils();
         uhsBits = uhsBitSet(pivotLen);
+        rankOfPmer = new int[(int)Math.pow(4,pivotLen)];
+        Arrays.fill(rankOfPmer, Integer.MAX_VALUE);
+        isRankInit = false;
+        initRank();
+        isRankInit = true;
     }
 
 
@@ -83,5 +96,48 @@ public abstract class UniversalHittingSetOrderingBase implements IOrdering {
         frG.close();
 
         return bits;
+    }
+
+    private void initRank(){
+        System.out.println("start init rank");
+        HashSet<char[]> pmers = getPmersInUHS();
+        char[][] pmersArr = new char[pmers.size()][pivotLen];
+        pmers.toArray(pmersArr);
+        Arrays.stream(pmersArr).sorted((o1, o2) -> {
+            try {
+                return strcmp(o1, o2, 0, 0, pivotLen);
+            } catch (IOException e) {
+                    e.printStackTrace();
+            }
+            return 0;
+        });
+        for(int i = 0; i< pmersArr.length; i++){
+            rankOfPmer[stringUtils.getDecimal(pmersArr[i], 0, pivotLen)] = i;
+        }
+        System.out.println("finish init rank");
+    }
+
+    private HashSet<char[]> getPmersInUHS(){
+        HashSet<char[]> pmers = new HashSet<>();
+        StringBuilder sb = new StringBuilder(pivotLen);
+        for(int i = 0; i<pivotLen; i++) sb.append('A');
+        generate(pmers, sb, 0);
+        return pmers;
+
+    }
+
+    private void generate(HashSet<char[]> pmers, StringBuilder sb, int n){
+        char[] alphabet = {'A', 'C', 'G', 'T'};
+        if (n == sb.capacity()) {
+            char[] pmer = sb.toString().toCharArray();
+            if(isInUHS(pmer, 0, pivotLen)) {
+                pmers.add(pmer);
+            }
+            return;
+        }
+        for (char letter : alphabet) {
+            sb.setCharAt(n, letter);
+            generate(pmers, sb, n + 1);
+        }
     }
 }
