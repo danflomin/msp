@@ -5,7 +5,7 @@ import buildgraph.StringUtils;
 
 import java.io.IOException;
 
-public class UHSSignatureOrdering extends UHSXorOrdering {
+public class UHSSignatureOrdering extends UHSOrderingBase {
     private SignatureUtils signatureUtils;
     protected boolean useSignature;
     private boolean useCache;
@@ -14,9 +14,8 @@ public class UHSSignatureOrdering extends UHSXorOrdering {
 
 
     public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature, boolean useCache) throws IOException {
-        super(xor, pivotLen);
         super(pivotLen);
-        xor = xor;
+        this.xor = xor;
         this.useSignature = useSignature;
         this.useCache = useCache;
         signatureUtils = new SignatureUtils(pivotLen);
