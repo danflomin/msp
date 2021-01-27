@@ -67,13 +67,14 @@ public class BuildDeBruijnGraph {
 //            }
         }
 
+        UHSFrequencySignatureOrdering uhs_freq_sig = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, true);
+        uhs_freq_sig.initRank();
         HashMap<String, IOrdering> orderingNames = new HashMap<String, IOrdering>() {{
 //    		put("lexico", new LexicographicOrdering(pivot_len));
 //    		put("sig", new LexicographicSignatureOrdering(pivot_len));
-//    		put("uhs", new UniversalHittingSetXorOrdering(xor, pivot_len));
 //    		put("uhs_sig", new UniversalHittingSetSignatureOrdering(xor, pivot_len, true, true));
 //			put("uhs_freq", new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, false));
-            put("uhs_freq_sig", new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, true));
+            put("uhs_freq_sig", uhs_freq_sig);
         }};
 
 

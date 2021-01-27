@@ -12,7 +12,6 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
     protected int xor;
 
 
-
     public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature, boolean useCache) throws IOException {
         super(pivotLen);
         this.xor = xor;
@@ -25,28 +24,22 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         this(0, pivotLen, useSignature, useCache);
     }
 
+
+
     @Override
     public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
+        if(!isRankInit) throw new IOException("rank not initialized yet");
+
         int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
         int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
 
-        if(x==y) return 0;
+        if (x == y) return 0;
 
-        if(isRankInit){
-            if (rankOfPmer[x] < rankOfPmer[y]){
-                return -1;
-            }
-            return 1;
+        // isRankInit = true here
+        if (rankOfPmer[x] < rankOfPmer[y]) {
+            return -1;
         }
-
-        boolean aAllowed = true, bAllowed = true;
-        if(useSignature){
-            aAllowed = signatureUtils.isAllowed(a, froma, x);
-            bAllowed = signatureUtils.isAllowed(b, fromb, y);
-        }
-
-        return strcmpSignature(x, y, aAllowed, bAllowed);
-
+        return 1;
     }
 
     @Override
@@ -59,7 +52,7 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         for (int i = from + 1; i <= to - pivotLen; i++) {
             j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & hexRepresentation;
 
-            if(useSignature)
+            if (useSignature)
                 jAllowed = signatureUtils.isAllowed(a, i, j);
 
             if (isInUHS(j)) {
@@ -74,22 +67,34 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         return min_pos;
     }
 
+    protected int calculateStrcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
+        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
+        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
+
+        if (x == y) return 0;
+
+        boolean aAllowed = true, bAllowed = true;
+        if (useSignature) {
+            aAllowed = signatureUtils.isAllowed(a, froma, x);
+            bAllowed = signatureUtils.isAllowed(b, fromb, y);
+        }
+
+        return strcmpSignature(x, y, aAllowed, bAllowed);
+    }
+
     protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
         int baseCompareValue = strcmpBase(x, y);
         if (baseCompareValue != BOTH_IN_UHS) {
             return baseCompareValue;
         }
-
         // from down here - both in UHS
-        if(useSignature){
+        if (useSignature) {
             if (!xAllowed && yAllowed) {
                 return 1;
             } else if (!yAllowed && xAllowed) {
                 return -1;
             }
         }
-
-
         // both allowed or both not allowed
         if ((x ^ xor) < (y ^ xor))
             return -1;
@@ -97,7 +102,4 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
             return 1;
 
     }
-
-
-
 }

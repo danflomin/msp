@@ -18,6 +18,13 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         isInit = false;
     }
 
+    @Override
+    public void initRank() throws IOException {
+        initFrequency();
+        super.initRank();
+        isRankInit = true;
+    }
+
     protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
         int baseCompareValue = strcmpBase(x, y);
         if (baseCompareValue != BOTH_IN_UHS) {
@@ -32,11 +39,6 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
             } else if (!yAllowed && xAllowed) {
                 return -1;
             }
-        }
-
-        if(!isInit){
-            initFrequency();
-            isInit = true;
         }
 
         // both allowed or both not allowed
