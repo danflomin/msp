@@ -134,9 +134,12 @@ public abstract class UHSOrderingBase implements IOrdering {
 
     protected static HashMap<Integer, Integer> pivotLengthToHexRepresentation = new HashMap<Integer, Integer>() {
         {
-            put(8, 0x0000ffff);
-            put(10, 0x000fffff);
-            put(12, 0x00ffffff);
+            put(5, 0x3ff);
+            put(6, 0xfff);
+            put(7, 0x3fff);
+            put(8, 0xffff);
+            put(10, 0xfffff);
+            put(12, 0xffffff);
         }
 
     };
