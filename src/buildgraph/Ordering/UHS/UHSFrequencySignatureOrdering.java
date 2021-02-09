@@ -9,8 +9,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
     private long[] pmerFrequency;
     private boolean isInit;
 
-    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, boolean useCache) throws IOException {
-        super(0, pivotLen, useSignature, useCache);
+    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature) throws IOException {
+        super(0, pivotLen, useSignature);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;

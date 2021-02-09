@@ -27,7 +27,7 @@ public class BuildDeBruijnGraph {
         int readLen = 100;
         int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
         boolean readable = false;
-        String orderingName = "uhs_freq_sig";
+        String orderingName = "uhs";
         int xor = 0; //11101101;
 
         if (args.length > 0 && args[0].equals("-help")) {
@@ -37,7 +37,8 @@ public class BuildDeBruijnGraph {
                     "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
                     "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
                     "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" +
-                    "[-o order] : lexico or sig or uhs or uhs_sig" + "\n" +
+                    "[-o order] : lexico or uhs or random" + "\n" +
+                    "[-x xor] : xor value for uhs random ordering" + "\n" +
                     "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
             return;
         }
@@ -49,8 +50,9 @@ public class BuildDeBruijnGraph {
     			k = new Integer(args[i+1]);
     		else if(args[i].equals("-NB"))
     			numBlocks = new Integer(args[i+1]);
-            else
-				if(args[i].equals("-o"))
+            else if(args[i].equals("-x"))
+                xor = new Integer(args[i+1]);
+            else if(args[i].equals("-o"))
 				orderingName = args[i+1];
     		else if(args[i].equals("-p"))
     			pivot_len = new Integer(args[i+1]);
@@ -68,33 +70,23 @@ public class BuildDeBruijnGraph {
             }
         }
 
-
-        IOrdering ordering;
+        IOrdering ordering = null;
         switch (orderingName)
         {
             case "lexico":
                 ordering = new LexicographicOrdering(pivot_len);
-                break;;
+                break;
             case "uhs":
-                ordering = new UHSSignatureOrdering(xor, pivot_len, false, true);
+                ordering = new UHSSignatureOrdering(xor, pivot_len, false);
             case "random":
                 //ordering =
                 break;
+            default:
+                System.out.println("ordering name not recognized - goes with lexico");
+                ordering = new LexicographicOrdering(pivot_len);
         }
 
-//        UHSFrequencySignatureOrdering uhs_freq_sig = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, true);
-//        uhs_freq_sig.initRank();
-//        HashMap<String, IOrdering> orderingNames = new HashMap<String, IOrdering>() {{
-//    		put("lexico", new LexicographicOrdering(pivot_len));
-//    		put("sig", new LexicographicSignatureOrdering(pivot_len));
-//    		put("uhs_sig", new UHSSignatureOrdering(xor, pivot_len, false, true));
-//			put("uhs_freq", new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, false));
-//            put("uhs_freq_sig", uhs_freq_sig);
-//        }};
 
-
-        IOrdering ordering = orderingNames.get(orderingName);
-//        IOrdering ordering = new LexicographicSignatureOrdering(pivot_len);
         Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
         Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 
@@ -119,19 +111,19 @@ public class BuildDeBruijnGraph {
 
             HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
             BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
-//
-//
-//            long time1 = 0;
-//            long t1 = System.currentTimeMillis();
-//            System.out.println("Merge IDReplaceTables Begin!");
-//            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-//            Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", sortcmd}, null, null).waitFor();
-//            long t2 = System.currentTimeMillis();
-//            time1 = (t2 - t1) / 1000;
-//            System.out.println("Time used for merging: " + time1 + " seconds!");
-//
-//            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-//            replace.Run(readable);
+
+
+            long time1 = 0;
+            long t1 = System.currentTimeMillis();
+            System.out.println("Merge IDReplaceTables Begin!");
+            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+            Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", sortcmd}, null, null).waitFor();
+            long t2 = System.currentTimeMillis();
+            time1 = (t2 - t1) / 1000;
+            System.out.println("Time used for merging: " + time1 + " seconds!");
+
+            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+            replace.Run(readable);
 
 
         } catch (Exception E) {

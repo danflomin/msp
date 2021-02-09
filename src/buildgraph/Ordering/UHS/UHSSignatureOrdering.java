@@ -8,20 +8,18 @@ import java.io.IOException;
 public class UHSSignatureOrdering extends UHSOrderingBase {
     private SignatureUtils signatureUtils;
     protected boolean useSignature;
-    private boolean useCache;
     protected int xor;
 
 
-    public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature, boolean useCache) throws IOException {
+    public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature) throws IOException {
         super(pivotLen);
         this.xor = xor;
         this.useSignature = useSignature;
-        this.useCache = useCache;
         signatureUtils = new SignatureUtils(pivotLen);
     }
 
-    public UHSSignatureOrdering(int pivotLen, boolean useSignature, boolean useCache) throws IOException {
-        this(0, pivotLen, useSignature, useCache);
+    public UHSSignatureOrdering(int pivotLen, boolean useSignature) throws IOException {
+        this(0, pivotLen, useSignature);
     }
 
 
