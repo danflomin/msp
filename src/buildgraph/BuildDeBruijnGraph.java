@@ -21,14 +21,12 @@ public class BuildDeBruijnGraph {
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/workspace/72.fastq";
 
-        int k = 60, pivot_len = 7, bufferSize = 8192, numThreads = 1, hsmapCapacity = 10000000;
-//    	int readLen = 124;
-//		int readLen = 101;
+        int k = 60, pivot_len = 7, bufferSize = 8192, numThreads = 1, hsmapCapacity = 40000000;
         int readLen = 100;
-        int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
+        int numBlocks = 1000;
         boolean readable = false;
         String orderingName = "uhs";
-        int xor = 0; //11101101;
+        int xor = 11101101;
 
         if (args.length > 0 && args[0].equals("-help")) {
             System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
@@ -77,9 +75,12 @@ public class BuildDeBruijnGraph {
                 ordering = new LexicographicOrdering(pivot_len);
                 break;
             case "uhs":
-                ordering = new UHSSignatureOrdering(xor, pivot_len, false);
+                UHSSignatureOrdering uhsOrdering = new UHSSignatureOrdering(xor, pivot_len, false);
+                uhsOrdering.initRank();
+                ordering = uhsOrdering;
+                break;
             case "random":
-                //ordering =
+                ordering = new RandomOrdering(pivot_len);
                 break;
             default:
                 System.out.println("ordering name not recognized - goes with lexico");
@@ -105,8 +106,10 @@ public class BuildDeBruijnGraph {
                     "Output Format: " + (readable == true ? "Text" : "Binary") + "\n");
 
             long maxID = partition.Run();
+            partition = null;
 
             AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+            map = null;
             BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
 
             HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();

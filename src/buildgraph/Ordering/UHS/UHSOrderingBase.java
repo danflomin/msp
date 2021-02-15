@@ -105,6 +105,7 @@ public abstract class UHSOrderingBase implements IOrdering {
         for (int i = 0; i < pmersArr.length; i++) {
             rankOfPmer[stringUtils.getDecimal(pmersArr[i], 0, pivotLen)] = i;
         }
+        isRankInit = true;
         System.out.println("finish init rank");
     }
 
