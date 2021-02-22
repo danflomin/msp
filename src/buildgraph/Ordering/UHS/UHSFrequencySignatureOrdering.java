@@ -9,8 +9,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
     private long[] pmerFrequency;
     private boolean isInit;
 
-    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, boolean useCache) throws IOException {
-        super(0, pivotLen, useSignature, useCache);
+    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature) throws IOException {
+        super(0, pivotLen, useSignature);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
@@ -27,7 +27,7 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
 
     protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
         int baseCompareValue = strcmpBase(x, y);
-        if (baseCompareValue != BOTH_IN_UHS) {
+        if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
             return baseCompareValue;
         }
 

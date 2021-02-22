@@ -8,6 +8,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.AbstractMap;
 import java.util.HashMap;
 
@@ -21,13 +22,13 @@ public class BuildDeBruijnGraph {
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/workspace/72.fastq";
 
-        int k = 60, pivot_len = 7, bufferSize = 8192, numThreads = 1, hsmapCapacity = 10000000;
+        int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 20, hsmapCapacity = 10000000;
 //    	int readLen = 124;
 //		int readLen = 101;
         int readLen = 100;
         int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
         boolean readable = false;
-        String orderingName = "uhs_freq_sig";
+        String orderingName = "uhs_sig_freq";
         int xor = 0; //11101101;
 
         if (args.length > 0 && args[0].equals("-help")) {
@@ -49,9 +50,9 @@ public class BuildDeBruijnGraph {
     			k = new Integer(args[i+1]);
     		else if(args[i].equals("-NB"))
     			numBlocks = new Integer(args[i+1]);
-            else
-				if(args[i].equals("-o"))
-				orderingName = args[i+1];
+//            else
+//				if(args[i].equals("-o"))
+//				orderingName = args[i+1];
     		else if(args[i].equals("-p"))
     			pivot_len = new Integer(args[i+1]);
     		else if(args[i].equals("-b"))
@@ -69,18 +70,6 @@ public class BuildDeBruijnGraph {
         }
 
 
-        IOrdering ordering;
-        switch (orderingName)
-        {
-            case "lexico":
-                ordering = new LexicographicOrdering(pivot_len);
-                break;;
-            case "uhs":
-                ordering = new UHSSignatureOrdering(xor, pivot_len, false, true);
-            case "random":
-                //ordering =
-                break;
-        }
 
 //        UHSFrequencySignatureOrdering uhs_freq_sig = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, true);
 //        uhs_freq_sig.initRank();
@@ -93,8 +82,25 @@ public class BuildDeBruijnGraph {
 //        }};
 
 
-        IOrdering ordering = orderingNames.get(orderingName);
+//        IOrdering ordering = orderingNames.get(orderingName);
 //        IOrdering ordering = new LexicographicSignatureOrdering(pivot_len);
+
+//        orderingName = "iterativeOrdering";
+        //IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
+//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 30000, 1, 10);
+//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, 10);
+//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, (int)Math.pow(4,pivot_len)/100);
+
+//        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k);
+
+//        IterativeOrdering2 ordering = new IterativeOrdering2(pivot_len, infile, readLen, bufferSize, k, 100000, 10000, 5, (int)Math.pow(4,pivot_len)/100);
+
+//        ordering.initFrequency();
+
+        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
+        ordering.initRank();
+
+
         Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
         Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 
@@ -116,6 +122,7 @@ public class BuildDeBruijnGraph {
 
             AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
             BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
 
             HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
             BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");

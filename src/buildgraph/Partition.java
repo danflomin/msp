@@ -55,7 +55,7 @@ public class Partition {
     }
 
     private int calPosNew(char[] a, int from, int to) {
-        return stringUtils.getDecimal(a, from, to) % numOfBlocks;
+        return Integer.hashCode(stringUtils.getDecimal(a, from, to)) % numOfBlocks;
     }
 
     private long DistributeNodes() throws IOException {
@@ -65,6 +65,8 @@ public class Partition {
         bfwG = new BufferedWriter[numOfBlocks];
 
         String describeline;
+
+        int numSuperKmers = 0;
 
         int prepos, substart = 0, subend, min_pos = -1;
 
@@ -115,6 +117,7 @@ public class Partition {
 
 
                             writeToFile(prepos, substart, subend, lineCharArray, outcnt);
+                            numSuperKmers++;
 
                             substart = i;
                             outcnt = cnt;
@@ -140,6 +143,8 @@ public class Partition {
                                         subend = i - 1 + k;
 
                                         writeToFile(prepos, substart, subend, lineCharArray, outcnt);
+                                        numSuperKmers++;
+
 
                                         substart = i;
                                         outcnt = cnt;
@@ -166,6 +171,8 @@ public class Partition {
                                         subend = i - 1 + k;
 
                                         writeToFile(prepos, substart, subend, lineCharArray, outcnt);
+                                        numSuperKmers++;
+
 
                                         substart = i;
                                         outcnt = cnt;
@@ -182,10 +189,13 @@ public class Partition {
                 prepos = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
 
                 writeToFile(prepos, substart, subend, lineCharArray, outcnt);
+                numSuperKmers++;
+
             }
         }
 
         System.out.println("Largest ID is " + cnt);
+        System.out.println("Num superkmers is = " + numSuperKmers);
 
         for (int i = 0; i < bfwG.length; i++) {
             if (bfwG[i] != null) {

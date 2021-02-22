@@ -8,20 +8,24 @@ import java.io.IOException;
 public class UHSSignatureOrdering extends UHSOrderingBase {
     private SignatureUtils signatureUtils;
     protected boolean useSignature;
-    private boolean useCache;
     protected int xor;
 
 
-    public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature, boolean useCache) throws IOException {
+    public UHSSignatureOrdering(int xor, int pivotLen, boolean useSignature) throws IOException {
         super(pivotLen);
         this.xor = xor;
         this.useSignature = useSignature;
-        this.useCache = useCache;
         signatureUtils = new SignatureUtils(pivotLen);
     }
 
-    public UHSSignatureOrdering(int pivotLen, boolean useSignature, boolean useCache) throws IOException {
-        this(0, pivotLen, useSignature, useCache);
+    public UHSSignatureOrdering(int pivotLen, boolean useSignature) throws IOException {
+        this(0, pivotLen, useSignature);
+    }
+
+    @Override
+    public void initRank() throws IOException {
+        super.initRank();
+        isRankInit = true;
     }
 
 
@@ -47,22 +51,23 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         int min_pos = from;
         int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;
-        boolean prevAllowed = signatureUtils.isAllowed(a, min_pos, prev), jAllowed = true;
+        //boolean prevAllowed = signatureUtils.isAllowed(a, min_pos, prev), jAllowed = true;
         int hexRepresentation = pivotLengthToHexRepresentation.get(pivotLen);
         for (int i = from + 1; i <= to - pivotLen; i++) {
             j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & hexRepresentation;
 
-            if (useSignature)
-                jAllowed = signatureUtils.isAllowed(a, i, j);
+//            if (useSignature)
+//                jAllowed = signatureUtils.isAllowed(a, i, j);
 
             if (isInUHS(j)) {
-                if (strcmpSignature(prev, j, prevAllowed, jAllowed) > 0) {
+                if(rankOfPmer[j] < rankOfPmer[prev]){//if (strcmpSignature(prev, j, prevAllowed, jAllowed) > 0) { // TODO: SHOULD USE RANKOFPMER
                     min_pos = i;
                     prev = j;
+                    //prevAllowed = jAllowed; // TODO: SHOULD BE HERE?
                 }
 
             }
-            prevAllowed = jAllowed;
+//            prevAllowed = jAllowed; // TODO: POSSIBLE BUG
         }
         return min_pos;
     }
@@ -82,9 +87,23 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         return strcmpSignature(x, y, aAllowed, bAllowed);
     }
 
+    protected int calculateStrcmp(int x, int y) throws IOException {
+        if (x == y) return 0;
+
+        boolean aAllowed = true, bAllowed = true;
+        if (useSignature) {
+            aAllowed = signatureUtils.isAllowed(x);
+            bAllowed = signatureUtils.isAllowed(y);
+        }
+
+        return strcmpSignature(x, y, aAllowed, bAllowed);
+    }
+
+
+
     protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
         int baseCompareValue = strcmpBase(x, y);
-        if (baseCompareValue != BOTH_IN_UHS) {
+        if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
             return baseCompareValue;
         }
         // from down here - both in UHS

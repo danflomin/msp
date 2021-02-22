@@ -16,6 +16,8 @@ public abstract class UHSOrderingBase implements IOrdering {
     protected StringUtils stringUtils;
 
     protected static final int BOTH_IN_UHS = 824;
+    protected static final int BOTH_NOT_IN_UHS = 1001;
+
     protected int pivotLen;
 
     protected int[] rankOfPmer;
@@ -32,6 +34,7 @@ public abstract class UHSOrderingBase implements IOrdering {
     }
 
     protected abstract int calculateStrcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException;
+    protected abstract int calculateStrcmp(int x, int y) throws IOException;
 
 
     public boolean isInUHS(int pmerDecimal) {
@@ -53,12 +56,14 @@ public abstract class UHSOrderingBase implements IOrdering {
 
         boolean xInUHS = isInUHS(x);
         boolean yInUHS = isInUHS(y);
-        if (xInUHS && !yInUHS) {
-            return -1;
-        } else if (!xInUHS && yInUHS) {
-            return 1;
+        if(xInUHS)
+        {
+            if(!yInUHS) return -1;
+            return BOTH_IN_UHS;
         }
-        return BOTH_IN_UHS;
+        if(yInUHS)
+            return 1;
+        return BOTH_NOT_IN_UHS;
     }
 
     private byte[] uhsBitSet(int pivotLen) throws IOException {
@@ -91,22 +96,43 @@ public abstract class UHSOrderingBase implements IOrdering {
 
     public void initRank() throws IOException {
         System.out.println("start init rank");
-        HashSet<char[]> pmers = getPmersInUHS();
-        char[][] pmersArr = new char[pmers.size()][pivotLen];
+        HashSet<Integer> pmers = new HashSet<>();
+        for(int i = 0; i <(int)Math.pow(4, pivotLen); i++) {if(isInUHS(i)) pmers.add(i);};
+
+        Integer[] pmersArr = new Integer[pmers.size()];
         pmers.toArray(pmersArr);
         Arrays.sort(pmersArr, (o1, o2) -> {
             try {
-                return calculateStrcmp(o1, o2, 0, 0, pivotLen);
+                return calculateStrcmp(o1, o2);
             } catch (IOException e) {
                 e.printStackTrace();
             }
             return 0;
         });
         for (int i = 0; i < pmersArr.length; i++) {
-            rankOfPmer[stringUtils.getDecimal(pmersArr[i], 0, pivotLen)] = i;
+            rankOfPmer[pmersArr[i]] = i;
         }
         System.out.println("finish init rank");
     }
+
+//    public void initRank() throws IOException {
+//        System.out.println("start init rank");
+//        HashSet<char[]> pmers = getPmersInUHS();
+//        char[][] pmersArr = new char[pmers.size()][pivotLen];
+//        pmers.toArray(pmersArr);
+//        Arrays.sort(pmersArr, (o1, o2) -> {
+//            try {
+//                return calculateStrcmp(o1, o2, 0, 0, pivotLen);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//            return 0;
+//        });
+//        for (int i = 0; i < pmersArr.length; i++) {
+//            rankOfPmer[stringUtils.getDecimal(pmersArr[i], 0, pivotLen)] = i;
+//        }
+//        System.out.println("finish init rank");
+//    }
 
     private HashSet<char[]> getPmersInUHS() {
         HashSet<char[]> pmers = new HashSet<>();
