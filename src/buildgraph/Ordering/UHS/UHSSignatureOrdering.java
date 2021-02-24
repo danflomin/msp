@@ -51,23 +51,17 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         int min_pos = from;
         int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
         int prev = j;
-        //boolean prevAllowed = signatureUtils.isAllowed(a, min_pos, prev), jAllowed = true;
         int hexRepresentation = pivotLengthToHexRepresentation.get(pivotLen);
         for (int i = from + 1; i <= to - pivotLen; i++) {
             j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & hexRepresentation;
 
-//            if (useSignature)
-//                jAllowed = signatureUtils.isAllowed(a, i, j);
-
             if (isInUHS(j)) {
-                if(rankOfPmer[j] < rankOfPmer[prev]){//if (strcmpSignature(prev, j, prevAllowed, jAllowed) > 0) { // TODO: SHOULD USE RANKOFPMER
+                if(rankOfPmer[j] < rankOfPmer[prev]){
                     min_pos = i;
                     prev = j;
-                    //prevAllowed = jAllowed; // TODO: SHOULD BE HERE?
                 }
 
             }
-//            prevAllowed = jAllowed; // TODO: POSSIBLE BUG
         }
         return min_pos;
     }

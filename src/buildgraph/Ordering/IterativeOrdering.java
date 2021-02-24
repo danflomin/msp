@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
 
 public class IterativeOrdering implements IOrdering {
     private String inputFile;
@@ -20,6 +21,7 @@ public class IterativeOrdering implements IOrdering {
     private int k;
     private long[] currentOrdering;
     private StringUtils stringUtils;
+    private long[] frequency;
 
     private int roundSamples;
     private int rounds;
@@ -146,12 +148,19 @@ public class IterativeOrdering implements IOrdering {
 
             if (numSampled >= roundSamples) {
                 roundNumber++;
-                if (roundNumber == rounds)
-                    keepSample = false;
-                else
+                if (roundNumber <= rounds) {
                     numSampled = 0;
-                adaptOrdering(pmerFrequency);
-                pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
+                    adaptOrdering(pmerFrequency);
+                    pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
+                    if (roundNumber == rounds)
+                    {
+                        System.out.println("Sampling for binning round");
+                        roundSamples = 100*rounds*roundSamples;
+                    }
+                } else {
+                    keepSample = false;
+                    frequency = pmerFrequency;
+                }
             }
 
 
@@ -225,4 +234,25 @@ public class IterativeOrdering implements IOrdering {
         if (currentOrdering[x] < currentOrdering[y]) return -1;
         return 1;
     }
+
+    public void exportOrderingForCpp() {
+        System.out.print("{");
+        for (int i = 0; i < currentOrdering.length; i++) {
+            System.out.print(currentOrdering[i] + ",");
+        }
+        System.out.print("}");
+        System.out.println();
+    }
+
+    public void exportBinningForCpp() {
+        System.out.print("{");
+        for (int i = 0; i < frequency.length; i++) {
+            System.out.print(frequency[i] + ",");
+        }
+        System.out.print("}");
+        System.out.println();
+    }
+
+
 }
+

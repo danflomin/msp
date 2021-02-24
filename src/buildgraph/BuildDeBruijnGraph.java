@@ -71,22 +71,9 @@ public class BuildDeBruijnGraph {
 
 
 
-//        UHSFrequencySignatureOrdering uhs_freq_sig = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, true);
-//        uhs_freq_sig.initRank();
-//        HashMap<String, IOrdering> orderingNames = new HashMap<String, IOrdering>() {{
-//    		put("lexico", new LexicographicOrdering(pivot_len));
-//    		put("sig", new LexicographicSignatureOrdering(pivot_len));
-//    		put("uhs_sig", new UHSSignatureOrdering(xor, pivot_len, false, true));
-//			put("uhs_freq", new UniversalFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, false));
-//            put("uhs_freq_sig", uhs_freq_sig);
-//        }};
-
-
-//        IOrdering ordering = orderingNames.get(orderingName);
-//        IOrdering ordering = new LexicographicSignatureOrdering(pivot_len);
-
-//        orderingName = "iterativeOrdering";
-        //IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
+        orderingName = "iterativeOrdering";
+        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
+        ordering.initFrequency();
 //        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 30000, 1, 10);
 //        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, 10);
 //        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, (int)Math.pow(4,pivot_len)/100);
@@ -97,54 +84,57 @@ public class BuildDeBruijnGraph {
 
 //        ordering.initFrequency();
 
-        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
-        ordering.initRank();
+//        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
+//        ordering.initRank();
 
+        ordering.exportOrderingForCpp();
+        ordering.exportBinningForCpp();
 
-        Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
-        Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
-
-        try {
-
-            System.out.println("Program Configuration:");
-            System.out.print("Input File: " + infile + "\n" +
-                    "Kmer Length: " + k + "\n" +
-                    "Read Length: " + readLen + "\n" +
-                    "# Of Blocks: " + numBlocks + "\n" +
-                    "Pivot Length: " + pivot_len + "\n" +
-                    "# Of Threads: " + numThreads + "\n" +
-                    "R/W Buffer Size: " + bufferSize + "\n" +
-                    "Ordering: " + orderingName + "\n" +
-                    "x xor: " + xor + "\n" +
-                    "Output Format: " + (readable == true ? "Text" : "Binary") + "\n");
-
-            long maxID = partition.Run();
-
-            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
-            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
-
-            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
-            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+//        try {
+//
+//            System.out.println("Program Configuration:");
+//            System.out.print("Input File: " + infile + "\n" +
+//                    "Kmer Length: " + k + "\n" +
+//                    "Read Length: " + readLen + "\n" +
+//                    "# Of Blocks: " + numBlocks + "\n" +
+//                    "Pivot Length: " + pivot_len + "\n" +
+//                    "# Of Threads: " + numThreads + "\n" +
+//                    "R/W Buffer Size: " + bufferSize + "\n" +
+//                    "Ordering: " + orderingName + "\n" +
+//                    "x xor: " + xor + "\n" +
+//                    "Output Format: " + (readable == true ? "Text" : "Binary") + "\n");
+//
+//            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
+//            Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 //
 //
-//            long time1 = 0;
-//            long t1 = System.currentTimeMillis();
-//            System.out.println("Merge IDReplaceTables Begin!");
-//            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-//            Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", sortcmd}, null, null).waitFor();
-//            long t2 = System.currentTimeMillis();
-//            time1 = (t2 - t1) / 1000;
-//            System.out.println("Time used for merging: " + time1 + " seconds!");
+//            long maxID = partition.Run();
 //
-//            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-//            replace.Run(readable);
-
-
-        } catch (Exception E) {
-            System.out.println("Exception caught!");
-            E.printStackTrace();
-        }
+//            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+//            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+//            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
+//
+//            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
+//            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+////
+////
+////            long time1 = 0;
+////            long t1 = System.currentTimeMillis();
+////            System.out.println("Merge IDReplaceTables Begin!");
+////            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+////            Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", sortcmd}, null, null).waitFor();
+////            long t2 = System.currentTimeMillis();
+////            time1 = (t2 - t1) / 1000;
+////            System.out.println("Time used for merging: " + time1 + " seconds!");
+////
+////            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+////            replace.Run(readable);
+//
+//
+//        } catch (Exception E) {
+//            System.out.println("Exception caught!");
+//            E.printStackTrace();
+//        }
 
     }
 

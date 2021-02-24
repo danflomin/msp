@@ -15,6 +15,7 @@ public class IterativeOrdering3 implements IOrdering {
     private int k;
     private long[] currentOrdering;
     private StringUtils stringUtils;
+    private long[] frequency;
 
     private int roundSamples = 100000;
     private int rounds = 10000;
@@ -151,5 +152,23 @@ public class IterativeOrdering3 implements IOrdering {
         if (x == y) return 0;
         if (currentOrdering[x] < currentOrdering[y]) return -1;
         return 1;
+    }
+
+    public void exportOrderingForCpp() {
+        System.out.print("{");
+        for (int i = 0; i < currentOrdering.length; i++) {
+            System.out.print(currentOrdering[i] + ",");
+        }
+        System.out.print("}");
+        System.out.println();
+    }
+
+    public void exportBinningForCpp() {
+        System.out.print("{");
+        for (int i = 0; i < frequency.length; i++) {
+            System.out.print(frequency[i] + ",");
+        }
+        System.out.print("}");
+        System.out.println();
     }
 }
