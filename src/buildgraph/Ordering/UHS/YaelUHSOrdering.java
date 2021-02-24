@@ -22,6 +22,7 @@ public class YaelUHSOrdering implements IOrdering {
         this.pivotLength = pivotLength;
         uhs_bits = uhsBitSet(pivotLength);
         mask = pivotLengthToHexRepresentation.get(pivotLength);
+        System.out.println("YAEL UHS");
     }
 
     @Override
@@ -30,7 +31,7 @@ public class YaelUHSOrdering implements IOrdering {
         int j = stringUtils.getDecimal(a, min_pos, min_pos+pivotLength);
         int prev = j;
         for(int i=from+1; i<=to-pivotLength; i++){
-            j = ((j * 4) ^ (StringUtils.valTable[a[i+pivotLength-1]])) & mask;
+            j = ((j * 4) ^ (StringUtils.valTable[a[i+pivotLength-1] - 'A'])) & mask;
             if(((this.uhs_bits[j >> 3] >> (j & 0b111)) & 1) == 1) {
                 if(strcmp(prev, j)>0) {
                     min_pos = i;
@@ -124,5 +125,18 @@ public class YaelUHSOrdering implements IOrdering {
         }
 
     };
+
+    public boolean isInUHS(int pmerDecimal) {
+        int pmerDecimalDiv8 = pmerDecimal >> 3;
+        int pmerDecimalMod8 = pmerDecimal & 0b111;
+        if (((this.uhs_bits[pmerDecimalDiv8] >> (pmerDecimalMod8)) & 1) == 1) {
+            return true;
+        }
+        return false;
+    }
+
+    public boolean isInUHS(char[] a, int from, int to) {
+        return isInUHS(stringUtils.getDecimal(a, from, to));
+    }
 
 }

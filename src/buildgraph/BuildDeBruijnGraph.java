@@ -3,6 +3,7 @@ package buildgraph;
 import buildgraph.Ordering.*;
 import buildgraph.Ordering.UHS.UHSFrequencySignatureOrdering;
 import buildgraph.Ordering.UHS.UHSSignatureOrdering;
+import buildgraph.Ordering.UHS.YaelUHSOrdering;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -26,7 +27,7 @@ public class BuildDeBruijnGraph {
 //    	int readLen = 124;
 //		int readLen = 101;
         int readLen = 100;
-        int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
+        int numBlocks = (int) Math.pow(4, pivot_len);//256; 1000;//
         boolean readable = false;
         String orderingName = "uhs_sig_freq";
         int xor = 0; //11101101;
@@ -44,97 +45,80 @@ public class BuildDeBruijnGraph {
         }
 
         for (int i = 0; i < args.length; i += 2) {
-    		if(args[i].equals("-in"))
-    			infile = args[i+1];
-    		else if(args[i].equals("-k"))
-    			k = new Integer(args[i+1]);
-    		else if(args[i].equals("-NB"))
-    			numBlocks = new Integer(args[i+1]);
-//            else
-//				if(args[i].equals("-o"))
-//				orderingName = args[i+1];
-    		else if(args[i].equals("-p"))
-    			pivot_len = new Integer(args[i+1]);
-    		else if(args[i].equals("-b"))
-    			bufferSize = new Integer(args[i+1]);
-    		else if(args[i].equals("-L"))
-    			readLen = new Integer(args[i+1]);
-    		else if(args[i].equals("-t"))
-    			numThreads = new Integer(args[i+1]);
-    		else if(args[i].equals("-r"))
-    			readable = new Boolean(args[i+1]);
-    		else{
+            if (args[i].equals("-in"))
+                infile = args[i + 1];
+            else if (args[i].equals("-k"))
+                k = new Integer(args[i + 1]);
+            else if (args[i].equals("-NB"))
+                numBlocks = new Integer(args[i + 1]);
+            else if(args[i].equals("-o"))
+				orderingName = args[i+1];
+            else if (args[i].equals("-p"))
+                pivot_len = new Integer(args[i + 1]);
+            else if (args[i].equals("-b"))
+                bufferSize = new Integer(args[i + 1]);
+            else if (args[i].equals("-L"))
+                readLen = new Integer(args[i + 1]);
+            else if (args[i].equals("-t"))
+                numThreads = new Integer(args[i + 1]);
+            else if (args[i].equals("-r"))
+                readable = new Boolean(args[i + 1]);
+            else if (args[i].equals("-x"))
+                xor = new Integer(args[i + 1]);
+            else {
                 System.out.println("Wrong with arguments. Abort!");
                 return;
             }
         }
 
+        IOrdering ordering = null;
+        switch (orderingName) {
+            case "lexico":
+                ordering = new LexicographicOrdering(pivot_len);
+                break;
+            case "uhs":
+                ordering = new YaelUHSOrdering(pivot_len, xor);
+                break;
+            case "random":
+                ordering = new RandomOrdering(pivot_len);
+                break;
+            default:
+                System.out.println("ordering name not recognized - goes with lexico");
+                ordering = new LexicographicOrdering(pivot_len);
+        }
 
 
-        orderingName = "iterativeOrdering";
-        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
-        ordering.initFrequency();
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 30000, 1, 10);
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, 10);
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, (int)Math.pow(4,pivot_len)/100);
+        try {
 
-//        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k);
+            System.out.println("Program Configuration:");
+            System.out.print("Input File: " + infile + "\n" +
+                    "Kmer Length: " + k + "\n" +
+                    "Read Length: " + readLen + "\n" +
+                    "# Of Blocks: " + numBlocks + "\n" +
+                    "Pivot Length: " + pivot_len + "\n" +
+                    "# Of Threads: " + numThreads + "\n" +
+                    "R/W Buffer Size: " + bufferSize + "\n" +
+                    "Ordering: " + orderingName + "\n" +
+                    "x xor: " + xor + "\n" +
+                    "Output Format: " + (readable == true ? "Text" : "Binary") + "\n");
 
-//        IterativeOrdering2 ordering = new IterativeOrdering2(pivot_len, infile, readLen, bufferSize, k, 100000, 10000, 5, (int)Math.pow(4,pivot_len)/100);
+            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
+            Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
 
-//        ordering.initFrequency();
 
-//        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
-//        ordering.initRank();
+            long maxID = partition.Run();
 
-        ordering.exportOrderingForCpp();
-        ordering.exportBinningForCpp();
+            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
 
-//        try {
-//
-//            System.out.println("Program Configuration:");
-//            System.out.print("Input File: " + infile + "\n" +
-//                    "Kmer Length: " + k + "\n" +
-//                    "Read Length: " + readLen + "\n" +
-//                    "# Of Blocks: " + numBlocks + "\n" +
-//                    "Pivot Length: " + pivot_len + "\n" +
-//                    "# Of Threads: " + numThreads + "\n" +
-//                    "R/W Buffer Size: " + bufferSize + "\n" +
-//                    "Ordering: " + orderingName + "\n" +
-//                    "x xor: " + xor + "\n" +
-//                    "Output Format: " + (readable == true ? "Text" : "Binary") + "\n");
-//
-//            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
-//            Map map = new Map(k, numBlocks, bufferSize, hsmapCapacity);
-//
-//
-//            long maxID = partition.Run();
-//
-//            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-//            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
-//            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
-//
-//            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
-//            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
-////
-////
-////            long time1 = 0;
-////            long t1 = System.currentTimeMillis();
-////            System.out.println("Merge IDReplaceTables Begin!");
-////            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-////            Runtime.getRuntime().exec(new String[]{"/bin/sh", "-c", sortcmd}, null, null).waitFor();
-////            long t2 = System.currentTimeMillis();
-////            time1 = (t2 - t1) / 1000;
-////            System.out.println("Time used for merging: " + time1 + " seconds!");
-////
-////            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-////            replace.Run(readable);
-//
-//
-//        } catch (Exception E) {
-//            System.out.println("Exception caught!");
-//            E.printStackTrace();
-//        }
+            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
+            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+
+        } catch (Exception E) {
+            System.out.println("Exception caught!");
+            E.printStackTrace();
+        }
 
     }
 
@@ -185,3 +169,4 @@ public class BuildDeBruijnGraph {
     }
 
 }
+
