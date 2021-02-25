@@ -2,9 +2,7 @@ package buildgraph.Ordering;
 
 import buildgraph.StringUtils;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Arrays;
 
 public class IterativeOrdering3 implements IOrdering {
@@ -57,9 +55,8 @@ public class IterativeOrdering3 implements IOrdering {
         int len = readLen;
 
 
-
         int min_pos = -1;
-        int minValue;
+        int minValue, currentValue;
 
         while (keepSample && (describeline = bfrG.readLine()) != null) {
 
@@ -69,37 +66,49 @@ public class IterativeOrdering3 implements IOrdering {
             if (stringUtils.isReadLegal(lineCharArray)) {
 
                 min_pos = findSmallest(lineCharArray, 0, k);
-                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos+pivotLength);
-                pmerFrequency[minValue]++;
+                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
+                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
+                ;
+                pmerFrequency[minValue] += k;
 
                 int bound = len - k + 1;
                 for (int i = 1; i < bound; i++) {
                     numSampled++;
+                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & 0xffff;
 
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
-                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos+pivotLength);
+                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
+                        pmerFrequency[minValue] += k;
                     } else {
                         int lastIndexInWindow = k + i - pivotLength;
-                        if (strcmp(lineCharArray, lineCharArray, lastIndexInWindow, min_pos, pivotLength) < 0) {
+                        if (strcmp(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
-                            minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos+pivotLength);
+                            minValue = currentValue;
+                            pmerFrequency[minValue] += k;
                         }
                     }
+
                     pmerFrequency[minValue]++;
                 }
             }
-            pmerFrequency[min_pos]++;
 
             if (numSampled >= roundSamples) {
                 roundNumber++;
-                if (roundNumber == rounds)
-                    keepSample = false;
-                else
+                if (roundNumber <= rounds) {
                     numSampled = 0;
-                adaptOrdering(pmerFrequency);
-                pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
+                    adaptOrdering(pmerFrequency);
+                    pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
+                    if (roundNumber == rounds) {
+                        System.out.println("Sampling for binning round");
+                        roundSamples = 100 * rounds * roundSamples;
+                    }
+                } else {
+                    keepSample = false;
+                }
             }
+            frequency = pmerFrequency;
+
         }
         bfrG.close();
         frG.close();
@@ -111,7 +120,7 @@ public class IterativeOrdering3 implements IOrdering {
             long biggest = Arrays.stream(pmerFrequency).max().getAsLong();
             for (int j = 0; j < pmerFrequency.length; j++) {
                 if (pmerFrequency[j] == biggest) {
-                    long newRank = currentOrdering[j] + (int) Math.pow(4, pivotLength)/100;
+                    long newRank = currentOrdering[j] + (int) Math.pow(4, pivotLength) / 100;
                     currentOrdering[j] = newRank;
                     currentOrdering[getReversed(j)] = newRank;
                     pmerFrequency[j] = 0;
@@ -154,21 +163,61 @@ public class IterativeOrdering3 implements IOrdering {
         return 1;
     }
 
+    public int strcmp(int x, int y) {
+        if (x == y) return 0;
+        if (currentOrdering[x] < currentOrdering[y]) return -1;
+        return 1;
+    }
+
     public void exportOrderingForCpp() {
-        System.out.print("{");
-        for (int i = 0; i < currentOrdering.length; i++) {
-            System.out.print(currentOrdering[i] + ",");
+        File file = new File("rank.txt");
+
+        BufferedWriter bf = null;
+
+        try {
+            bf = new BufferedWriter(new FileWriter(file));
+
+            for (int i = 0; i < currentOrdering.length; i++) {
+                bf.write(Long.toString(currentOrdering[i]));
+                bf.newLine();
+            }
+            bf.flush();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+
+            try {
+                //always close the writer
+                bf.close();
+            } catch (Exception e) {
+            }
         }
-        System.out.print("}");
-        System.out.println();
     }
 
     public void exportBinningForCpp() {
-        System.out.print("{");
-        for (int i = 0; i < frequency.length; i++) {
-            System.out.print(frequency[i] + ",");
+        File file = new File("freq.txt");
+
+        BufferedWriter bf = null;
+
+        try {
+            bf = new BufferedWriter(new FileWriter(file));
+
+            for (int i = 0; i < frequency.length; i++) {
+                bf.write(Long.toString(frequency[i]));
+                bf.newLine();
+            }
+            bf.flush();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+
+            try {
+                //always close the writer
+                bf.close();
+            } catch (Exception e) {
+            }
         }
-        System.out.print("}");
-        System.out.println();
     }
 }

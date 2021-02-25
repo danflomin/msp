@@ -72,8 +72,8 @@ public class BuildDeBruijnGraph {
 
 
         orderingName = "iterativeOrdering";
-        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
-        ordering.initFrequency();
+//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
+//        ordering.initFrequency();
 //        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 30000, 1, 10);
 //        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, 10);
 //        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, (int)Math.pow(4,pivot_len)/100);
@@ -87,6 +87,9 @@ public class BuildDeBruijnGraph {
 //        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
 //        ordering.initRank();
 
+        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k);
+
+        ordering.initFrequency();
         ordering.exportOrderingForCpp();
         ordering.exportBinningForCpp();
 

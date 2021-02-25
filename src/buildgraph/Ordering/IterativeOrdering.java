@@ -155,13 +155,13 @@ public class IterativeOrdering implements IOrdering {
                     if (roundNumber == rounds)
                     {
                         System.out.println("Sampling for binning round");
-                        roundSamples = 100*rounds*roundSamples;
+                        roundSamples = Integer.MAX_VALUE;//100*rounds*roundSamples;
                     }
                 } else {
                     keepSample = false;
-                    frequency = pmerFrequency;
                 }
             }
+            frequency = pmerFrequency;
 
 
         }
