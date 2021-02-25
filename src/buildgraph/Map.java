@@ -207,6 +207,11 @@ public class Map{
 					fw = null;
 					bfr = null;
 					fr = null;
+
+					File myObj = new File("Nodes/nodes"+p);
+					if (!myObj.delete()) {
+						System.out.println("Failed to delete the file." + p);
+					}
 				}
 							
 			}catch(Exception E){
