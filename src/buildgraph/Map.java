@@ -82,8 +82,8 @@ public class Map{
 								
 					fr = new FileReader("Nodes/nodes"+p);
 					bfr = new BufferedReader(fr, bufSize);
-					//fw = new FileWriter("Maps/maps"+p);
-					//bfw = new BufferedWriter(fw, bufSize);
+					fw = new FileWriter("Maps/maps"+p);
+					bfw = new BufferedWriter(fw, bufSize);
 					
 					HashMap<Kmer64,Long> nodes = new HashMap<Kmer64,Long>(capacity);
 					
@@ -124,8 +124,8 @@ public class Map{
 								nodes.put(k1, cnt+j*2);
 								
 								if(!newOut && !next){
-									//bfw.write(preOriginal+"\t"+preReplace);
-									//bfw.newLine();
+									bfw.write(preOriginal+"\t"+preReplace);
+									bfw.newLine();
 									
 									newOut = true;
 								}
@@ -142,7 +142,7 @@ public class Map{
 								}
 								
 								if(newOut){
-									//bfw.write(Original+"\t"+Replace+"\t");
+									bfw.write(Original+"\t"+Replace+"\t");
 									newOut = false;
 									next = true;
 								}
@@ -151,23 +151,23 @@ public class Map{
 									if(next){
 										diff = Replace - preReplace;
 										if(diff==2){
-											//bfw.write("+\t");
+											bfw.write("+\t");
 											next = false;
 										}
 										else if(diff==-2){
-											//bfw.write("-\t");
+											bfw.write("-\t");
 											next = false;
 										}
 										else{
-											//bfw.write("\n"+Original+"\t"+Replace+"\t");
+											bfw.write("\n"+Original+"\t"+Replace+"\t");
 										}
 									}
 									else{
 										if(Replace - preReplace != diff){
-											//bfw.write(preOriginal+"\t"+preReplace);
-											//bfw.newLine();
+											bfw.write(preOriginal+"\t"+preReplace);
+											bfw.newLine();
 											
-											//bfw.write(Original+"\t"+Replace+"\t");
+											bfw.write(Original+"\t"+Replace+"\t");
 											next = true;
 										}
 									}
@@ -175,7 +175,7 @@ public class Map{
 								
 								else if(next==true){
 									
-									//bfw.write("\n"+Original+"\t"+Replace+"\t");
+									bfw.write("\n"+Original+"\t"+Replace+"\t");
 								}
 								
 								preOriginal = Original;
@@ -185,11 +185,11 @@ public class Map{
 						}
 						
 						if(!newOut && !next){
-							//bfw.write(preOriginal+"\t"+preReplace);
-							//bfw.newLine();
+							bfw.write(preOriginal+"\t"+preReplace);
+							bfw.newLine();
 						}
 						else if(next){
-							//bfw.newLine();
+							bfw.newLine();
 						}
 					}
 
@@ -199,19 +199,19 @@ public class Map{
 					nodes.clear();
 					nodes = null;
 					
-					//bfw.close();
-					//fw.close();
+					bfw.close();
+					fw.close();
 					bfr.close();
 					fr.close();
-					//bfw = null;
-					//fw = null;
+					bfw = null;
+					fw = null;
 					bfr = null;
 					fr = null;
 
-					File myObj = new File("Nodes/nodes"+p);
-					if (!myObj.delete()) {
-						System.out.println("Failed to delete the file." + p);
-					}
+//					File myObj = new File("Nodes/nodes"+p);
+//					if (!myObj.delete()) {
+//						System.out.println("Failed to delete the file." + p);
+//					}
 				}
 							
 			}catch(Exception E){

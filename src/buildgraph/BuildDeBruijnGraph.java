@@ -115,6 +115,19 @@ public class BuildDeBruijnGraph {
             HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
             BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
 
+
+            long time1=0;
+            long t1 = System.currentTimeMillis();
+            System.out.println("Merge IDReplaceTables Begin!");
+            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+            Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
+            long t2 = System.currentTimeMillis();
+            time1 = (t2-t1)/1000;
+            System.out.println("Time used for merging: " + time1 + " seconds!");
+
+            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+            replace.Run(readable);
+
         } catch (Exception E) {
             System.out.println("Exception caught!");
             E.printStackTrace();
@@ -139,7 +152,7 @@ public class BuildDeBruijnGraph {
         File file = new File(fileName);
 
         BufferedWriter bf = null;
-        ;
+
 
         try {
             bf = new BufferedWriter(new FileWriter(file));
