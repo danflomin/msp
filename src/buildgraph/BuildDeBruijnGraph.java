@@ -18,14 +18,14 @@ public class BuildDeBruijnGraph {
 
 //    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-        String infile = "/home/gaga/data-scratch/yaelbenari/datas/breastCancer.fastq";
-//		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
+//        String infile = "/home/gaga/data-scratch/yaelbenari/datas/breastCancer.fastq";
+		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/workspace/72.fastq";
 
         int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 20, hsmapCapacity = 10000000;
-//    	int readLen = 124;
+    	int readLen = 124;
 //		int readLen = 101;
-        int readLen = 100;
+//        int readLen = 100;
         int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
         boolean readable = false;
         String orderingName = "uhs_sig_freq";
