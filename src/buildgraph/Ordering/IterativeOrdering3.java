@@ -15,9 +15,10 @@ public class IterativeOrdering3 implements IOrdering {
     private StringUtils stringUtils;
     private long[] frequency;
 
-    private int roundSamples = 100000;
-    private int rounds = 10000;
-    private int elementsToPush = 1;
+    private int statisticsSamples;
+    private int roundSamples;
+    private int rounds;
+    private int elementsToPush;
 
     public IterativeOrdering3(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
         this.inputFile = infile;
@@ -36,6 +37,17 @@ public class IterativeOrdering3 implements IOrdering {
             currentOrdering[i] = canonical;
             currentOrdering[getReversed(i)] = canonical;
         }
+        roundSamples = 100000;
+        rounds = 10000;
+        elementsToPush = 1;
+    }
+
+    public IterativeOrdering3(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples) {
+        this(pivotLength, infile, readLen, bufSize, k);
+        this.roundSamples = roundSamples;
+        this.rounds = rounds;
+        this.elementsToPush = elementsToPush;
+        this.statisticsSamples = statisticsSamples;
     }
 
 
