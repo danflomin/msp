@@ -23,7 +23,7 @@ public class BuildDeBruijnGraph {
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/workspace/72.fastq";
 
-        int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 20, hsmapCapacity = 10000000;
+        int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 1, hsmapCapacity = 10000000;
 //    	int readLen = 124;
 //		int readLen = 101;
         int readLen = 100;
