@@ -137,6 +137,7 @@ public class IterativeOrdering3 implements IOrdering {
                     currentOrdering[getReversed(j)] = newRank;
                     pmerFrequency[j] = 0;
                     pmerFrequency[getReversed(j)] = 0;
+                    break;
                 }
             }
         }
