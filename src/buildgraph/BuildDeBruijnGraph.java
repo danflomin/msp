@@ -80,7 +80,7 @@ public class BuildDeBruijnGraph {
                 ordering = new YaelUHSOrdering(pivot_len, xor);
                 break;
             case "random":
-                ordering = new RandomOrdering(pivot_len);
+                ordering = new RandomOrdering(pivot_len, xor);
                 break;
             default:
                 System.out.println("ordering name not recognized - goes with lexico");
