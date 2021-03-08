@@ -16,21 +16,16 @@ public class BuildDeBruijnGraph {
 
     public static void main(String[] args) throws IOException {
 
-//    	String infile = "/home/gaga/data-scratch/yaelbenari/datas/chr14.fastq";
-//		String infile = "/home/gaga/data-scratch/yaelbenari/datas/smalldata.fastq";
-//        String infile = "/home/gaga/data-scratch/yaelbenari/datas/breastCancer.fastq";
-		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
-//		String infile = "/home/gaga/data-scratch/yaelbenari/datas/workspace/72.fastq";
+        String infile = null;
 
         int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 20, hsmapCapacity = 10000000;
-    	int readLen = 124;
-//		int readLen = 101;
-//        int readLen = 100;
+        int readLen = 124;
 //        int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
 //        boolean readable = false;
         String orderingName = "uhs_sig_freq";
         int xor = 0; //11101101;
-        int numRounds=0, elementsToPush=0, samplesPerRound=0, statSamples=0;
+        int numRounds = 0, elementsToPush = 0, samplesPerRound = 0, statSamples = 0;
+        double punishPercentage = 1;
 
         if (args.length > 0 && args[0].equals("-help")) {
             System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
@@ -45,39 +40,40 @@ public class BuildDeBruijnGraph {
         }
 
         for (int i = 0; i < args.length; i += 2) {
-    		if(args[i].equals("-in"))
-    			infile = args[i+1];
-    		else if(args[i].equals("-k"))
-    			k = new Integer(args[i+1]);
+            if (args[i].equals("-in"))
+                infile = args[i + 1];
+            else if (args[i].equals("-k"))
+                k = new Integer(args[i + 1]);
 //    		else if(args[i].equals("-NB"))
 //    			numBlocks = new Integer(args[i+1]);
 //            else
 //				if(args[i].equals("-o"))
 //				orderingName = args[i+1];
-    		else if(args[i].equals("-p"))
-    			pivot_len = new Integer(args[i+1]);
-    		else if(args[i].equals("-b"))
-    			bufferSize = new Integer(args[i+1]);
-    		else if(args[i].equals("-L"))
-    			readLen = new Integer(args[i+1]);
-    		else if(args[i].equals("-t"))
-    			numThreads = new Integer(args[i+1]);
+            else if (args[i].equals("-p"))
+                pivot_len = new Integer(args[i + 1]);
+            else if (args[i].equals("-b"))
+                bufferSize = new Integer(args[i + 1]);
+            else if (args[i].equals("-L"))
+                readLen = new Integer(args[i + 1]);
+            else if (args[i].equals("-t"))
+                numThreads = new Integer(args[i + 1]);
 //    		else if(args[i].equals("-r"))
 //    			readable = new Boolean(args[i+1]);
-            else if(args[i].equals("-rounds"))
-                numRounds = new Integer(args[i+1]);
-            else if(args[i].equals("-samples"))
-                samplesPerRound = new Integer(args[i+1]);
-            else if(args[i].equals("-elementsToPush"))
-                elementsToPush = new Integer(args[i+1]);
-            else if(args[i].equals("-statSamples"))
-                statSamples = new Integer(args[i+1]);
-            else{
+            else if (args[i].equals("-rounds"))
+                numRounds = new Integer(args[i + 1]);
+            else if (args[i].equals("-samples"))
+                samplesPerRound = new Integer(args[i + 1]);
+            else if (args[i].equals("-elementsToPush"))
+                elementsToPush = new Integer(args[i + 1]);
+            else if (args[i].equals("-statSamples"))
+                statSamples = new Integer(args[i + 1]);
+            else if (args[i].equals("-punishPercentage"))
+                punishPercentage = new Double(args[i + 1]);
+            else {
                 System.out.println("Wrong with arguments. Abort!");
                 return;
             }
         }
-
 
 
         orderingName = "iterativeOrdering";
@@ -96,8 +92,12 @@ public class BuildDeBruijnGraph {
 //        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
 //        ordering.initRank();
 
-        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples);
-
+//        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples);
+//        IterativeOrdering4 ordering = new IterativeOrdering4(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
+//        IterativeOrdering6 ordering = new IterativeOrdering6(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
+//        IterativeUHSOrdering8 ordering = new IterativeUHSOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
+//        IterativeOrdering8 ordering = new IterativeOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
+        IterativeOrdering9 ordering = new IterativeOrdering9(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
         ordering.initFrequency();
         ordering.exportOrderingForCpp();
         ordering.exportBinningForCpp();
