@@ -97,11 +97,22 @@ public class BuildDeBruijnGraph {
 //        IterativeOrdering6 ordering = new IterativeOrdering6(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
 //        IterativeUHSOrdering8 ordering = new IterativeUHSOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
 //        IterativeOrdering8 ordering = new IterativeOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-        IterativeOrdering9 ordering = new IterativeOrdering9(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-        ordering.initFrequency();
+
+//        GOOD
+//        IterativeOrdering9 ordering = new IterativeOrdering9(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
+//        ordering.initFrequency();
+//        ordering.exportOrderingForCpp();
+//        ordering.exportBinningForCpp();
+//        END GOOD
+
+//        FREQUENCY SUCKS
+//        FrequencyOrdering ordering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds*samplesPerRound, statSamples, k);
+//        ordering.initFrequency();
+//        END FREQUENCY
+
+        IterativeOrdering10 ordering = new IterativeOrdering10(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
         ordering.exportOrderingForCpp();
         ordering.exportBinningForCpp();
-
     }
 
 //    public static HashMap<Long, Long> getBytesPerFile() {
