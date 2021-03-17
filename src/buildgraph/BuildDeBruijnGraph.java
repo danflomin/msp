@@ -99,66 +99,92 @@ public class BuildDeBruijnGraph {
 //        IterativeOrdering8 ordering = new IterativeOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
 
 //        GOOD
-//        IterativeOrdering9 ordering = new IterativeOrdering9(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-//        ordering.initFrequency();
-//        ordering.exportOrderingForCpp();
-//        ordering.exportBinningForCpp();
+        IterativeOrdering9 ordering = new IterativeOrdering9(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
+        ordering.initFrequency();
+        ordering.exportOrderingForCpp();
+        ordering.exportBinningForCpp();
 //        END GOOD
 
 //        FREQUENCY SUCKS
 //        FrequencyOrdering ordering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds*samplesPerRound, statSamples, k);
 //        ordering.initFrequency();
 //        END FREQUENCY
+        try {
 
-        IterativeOrdering10 ordering = new IterativeOrdering10(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-        ordering.exportOrderingForCpp();
-        ordering.exportBinningForCpp();
+            System.out.println("Program Configuration:");
+            System.out.print("Input File: " + infile + "\n" +
+                    "Kmer Length: " + k + "\n" +
+                    "Read Length: " + readLen + "\n" +
+                    "Pivot Length: " + pivot_len + "\n" +
+                    "# Of Threads: " + numThreads + "\n" +
+                    "R/W Buffer Size: " + bufferSize + "\n" +
+                    "Ordering: " + orderingName + "\n");
+
+            Partition partition = new Partition(k, infile, (int)Math.pow(4, pivot_len), pivot_len, bufferSize, readLen, ordering);
+            Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
+
+
+            partition.Run();
+
+            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
+
+            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
+            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+
+        } catch (Exception E) {
+            System.out.println("Exception caught!");
+            E.printStackTrace();
+        }
+
+
     }
 
-//    public static HashMap<Long, Long> getBytesPerFile() {
-//        File folder = new File("./Nodes");
-//        File[] listOfFiles = folder.listFiles();
-//
-//        HashMap<Long, Long> bytesPerFile = new HashMap<>();
-//
-//        for (int i = 0; i < listOfFiles.length; i++) {
-//            if (listOfFiles[i].isFile())
-//                bytesPerFile.put(Long.parseLong(listOfFiles[i].getName().replace("nodes", "")), listOfFiles[i].length());
-//        }
-//        return bytesPerFile;
-//    }
-//
-//    public static void writeToFile(AbstractMap<Long, Long> data, String fileName) {
-//        File file = new File(fileName);
-//
-//        BufferedWriter bf = null;
-//        ;
-//
-//        try {
-//            bf = new BufferedWriter(new FileWriter(file));
-//
-//            bf.write("x = {");
-//            bf.newLine();
-//
-//            //iterate map entries
-//            for (java.util.Map.Entry<Long, Long> entry : data.entrySet()) {
-//                bf.write(entry.getKey() + ":" + entry.getValue() + ",");
-//                bf.newLine();
-//            }
-//            bf.write("}");
-//            bf.flush();
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } finally {
-//
-//            try {
-//                //always close the writer
-//                bf.close();
-//            } catch (Exception e) {
-//            }
-//        }
-//
-//    }
+    public static HashMap<Long, Long> getBytesPerFile() {
+        File folder = new File("./Nodes");
+        File[] listOfFiles = folder.listFiles();
+
+        HashMap<Long, Long> bytesPerFile = new HashMap<>();
+
+        for (int i = 0; i < listOfFiles.length; i++) {
+            if (listOfFiles[i].isFile())
+                bytesPerFile.put(Long.parseLong(listOfFiles[i].getName().replace("nodes", "")), listOfFiles[i].length());
+        }
+        return bytesPerFile;
+    }
+
+    public static void writeToFile(AbstractMap<Long, Long> data, String fileName) {
+        File file = new File(fileName);
+
+        BufferedWriter bf = null;
+        ;
+
+        try {
+            bf = new BufferedWriter(new FileWriter(file));
+
+            bf.write("x = {");
+            bf.newLine();
+
+            //iterate map entries
+            for (java.util.Map.Entry<Long, Long> entry : data.entrySet()) {
+                bf.write(entry.getKey() + ":" + entry.getValue() + ",");
+                bf.newLine();
+            }
+            bf.write("}");
+            bf.flush();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+
+            try {
+                //always close the writer
+                bf.close();
+            } catch (Exception e) {
+            }
+        }
+
+    }
 
 }

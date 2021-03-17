@@ -25,6 +25,8 @@ public class Partition {
     private StringUtils stringUtils;
 
     private int numOpenFiles;
+    private int minFile;
+    private int maxFile;
 
 
     public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering) {
@@ -233,24 +235,30 @@ public class Partition {
     }
 
     private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
-        tryCreateWriterForPmer(prepos);
+        if(minFile <= prepos && prepos < maxFile)
+        {
+            tryCreateWriterForPmer(prepos);
 
-        BufferedWriter writer = bfwG[prepos];
+            BufferedWriter writer = bfwG[prepos];
 
-        writer.write(lineCharArray, substart, subend - substart);
-        writer.write("\t" + outcnt);
-        writer.newLine();
+            writer.write(lineCharArray, substart, subend - substart);
+            writer.write("\t" + outcnt);
+            writer.newLine();
+        }
     }
 
-    public long Run() throws Exception {
+    public void Run() throws Exception {
         long time1 = 0;
         long t1 = System.currentTimeMillis();
         System.out.println("Distribute Nodes Begin!");
-        long maxID = DistributeNodes();
+        for(minFile = 0, maxFile=10000; minFile < (int)Math.pow(4, pivotLen); minFile+= 10000, maxFile += 10000)
+        {
+            System.out.println("hi");
+            DistributeNodes();
+        }
         long t2 = System.currentTimeMillis();
         time1 = (t2 - t1) / 1000;
         System.out.println("Time used for distributing nodes: " + time1 + " seconds!");
-        return maxID;
     }
 
 }
