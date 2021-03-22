@@ -17,6 +17,18 @@ public class StringUtils {
         return val;
     }
 
+    public long getLDecimal(char[] a, int from, int to){
+
+        long val=0;
+
+        for(int i=from; i<to; i++){
+            val = val<<2;
+            val += valTable[a[i]-'A'];
+        }
+
+        return val;
+    }
+
     public boolean isReadLegal(char[] line){
         int Len = line.length;
         for(int i=0; i<Len; i++){
