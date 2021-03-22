@@ -23,7 +23,7 @@ public class BuildDeBruijnGraph {
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/beeData.fastq";
 //		String infile = "/home/gaga/data-scratch/yaelbenari/datas/workspace/72.fastq";
 
-        int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 1, hsmapCapacity = 10000000;
+        int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 1, hsmapCapacity = 15000000;
 //    	int readLen = 124;
 //		int readLen = 101;
         int readLen = 100;
@@ -116,17 +116,17 @@ public class BuildDeBruijnGraph {
             BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
 
 
-            long time1=0;
-            long t1 = System.currentTimeMillis();
-            System.out.println("Merge IDReplaceTables Begin!");
-            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
-            Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
-            long t2 = System.currentTimeMillis();
-            time1 = (t2-t1)/1000;
-            System.out.println("Time used for merging: " + time1 + " seconds!");
-
-            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
-            replace.Run(readable);
+//            long time1=0;
+//            long t1 = System.currentTimeMillis();
+//            System.out.println("Merge IDReplaceTables Begin!");
+//            String sortcmd = "sort -t $\'\t\' -o IDReplaceTable +0 -1 -n -m Maps/maps*";
+//            Runtime.getRuntime().exec(new String[]{"/bin/sh","-c",sortcmd},null,null).waitFor();
+//            long t2 = System.currentTimeMillis();
+//            time1 = (t2-t1)/1000;
+//            System.out.println("Time used for merging: " + time1 + " seconds!");
+//
+//            Replace replace = new Replace("IDReplaceTable", "OutGraph", k, bufferSize, readLen, maxID);
+//            replace.Run(readable);
 
         } catch (Exception E) {
             System.out.println("Exception caught!");
