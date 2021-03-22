@@ -223,7 +223,6 @@ public class Partition {
                     fwG[i] = null;
                 }
             }
-            Runtime.getRuntime().gc();
             numOpenFiles = 0;
         }
 

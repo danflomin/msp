@@ -46,6 +46,18 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         return 1;
     }
 
+    public int strcmp(int x, int y) throws IOException {
+        if(!isRankInit) throw new IOException("rank not initialized yet");
+
+        if (x == y) return 0;
+
+        // isRankInit = true here
+        if (rankOfPmer[x] < rankOfPmer[y]) {
+            return -1;
+        }
+        return 1;
+    }
+
     @Override
     public int findSmallest(char[] a, int from, int to) throws IOException {
         int min_pos = from;
