@@ -123,7 +123,7 @@ public class BuildDeBruijnGraph {
                 ordering = ordering9_withCounterNormalized;
                 break;
             case "10":
-                IterativeOrdering10 ordering10 = new IterativeOrdering10(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
+                IterativeOrdering10_WithCounterNormalized ordering10 = new IterativeOrdering10_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
                 ordering10.initFrequency();
                 ordering10.exportOrderingForCpp();
                 ordering10.exportBinningForCpp();
