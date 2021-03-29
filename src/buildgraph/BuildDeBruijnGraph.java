@@ -150,34 +150,34 @@ public class BuildDeBruijnGraph {
                 break;
         }
 
-        try {
-
-            System.out.println("Program Configuration:");
-            System.out.print("Input File: " + infile + "\n" +
-                    "Kmer Length: " + k + "\n" +
-                    "Read Length: " + readLen + "\n" +
-                    "Pivot Length: " + pivot_len + "\n" +
-                    "# Of Threads: " + numThreads + "\n" +
-                    "R/W Buffer Size: " + bufferSize + "\n" +
-                    "Ordering: " + orderingName + "\n");
-
-            Partition partition = new Partition(k, infile, (int)Math.pow(4, pivot_len), pivot_len, bufferSize, readLen, ordering);
-            Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
-
-
-            partition.Run();
-
-            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
-            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
-
-            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
-            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
-
-        } catch (Exception E) {
-            System.out.println("Exception caught!");
-            E.printStackTrace();
-        }
+//        try {
+//
+//            System.out.println("Program Configuration:");
+//            System.out.print("Input File: " + infile + "\n" +
+//                    "Kmer Length: " + k + "\n" +
+//                    "Read Length: " + readLen + "\n" +
+//                    "Pivot Length: " + pivot_len + "\n" +
+//                    "# Of Threads: " + numThreads + "\n" +
+//                    "R/W Buffer Size: " + bufferSize + "\n" +
+//                    "Ordering: " + orderingName + "\n");
+//
+//            Partition partition = new Partition(k, infile, (int)Math.pow(4, pivot_len), pivot_len, bufferSize, readLen, ordering);
+//            Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
+//
+//
+//            partition.Run();
+//
+//            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+//            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+//            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
+//
+//            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
+//            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+//
+//        } catch (Exception E) {
+//            System.out.println("Exception caught!");
+//            E.printStackTrace();
+//        }
 
 
     }
