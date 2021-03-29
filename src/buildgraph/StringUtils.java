@@ -17,6 +17,11 @@ public class StringUtils {
         return val;
     }
 
+    public int getRDecimal(char[] a, char[] b, int from, int to){
+
+        return Math.min(getDecimal(a, from, to), getDecimal(b, from, to));
+    }
+
     public long getLDecimal(char[] a, int from, int to){
 
         long val=0;
