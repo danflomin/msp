@@ -62,16 +62,17 @@ public class MinimizerCounter {
         return minimizerCounters.clone();
     }
 
-    public void Run() throws Exception {
+    public long[] Run() throws Exception {
         long time1 = 0;
         long t1 = System.currentTimeMillis();
         System.out.println("Minimizers counting Begin!");
         System.out.println("hi");
-        getMinimizersCounters();
+        long[] counters = getMinimizersCounters();
 
         long t2 = System.currentTimeMillis();
         time1 = (t2 - t1) / 1000;
         System.out.println("Time used for counting minimizers appearances: " + time1 + " seconds!");
+        return counters;
     }
 
 }

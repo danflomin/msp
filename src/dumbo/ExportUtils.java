@@ -1,11 +1,9 @@
 package dumbo;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.AbstractMap;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class ExportUtils {
     public void exportOrderingForCpp(long[] currentOrdering) {
@@ -33,6 +31,38 @@ public class ExportUtils {
             }
         }
     }
+
+//    public long[] importOrdering(String fileName, int pivotLength) throws Exception {
+//        String line;
+//        LinkedList<Long> ranks = new LinkedList<>();
+//
+//        File file = new File(fileName);
+//        BufferedReader bfr = null;
+//
+//        try {
+//            bfr = new BufferedReader(new FileReader(file));
+//            while ((line = bfr.readLine()) != null) {
+//                ranks.add(Long.getLong(line));
+//            }
+//
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } finally {
+//            bfr.close();
+//        }
+//
+//        if (ranks.size() != (int) Math.pow(4, pivotLength)) {
+//            throw new Exception("rank file of wrong size");
+//        }
+//        int i = 0;
+//        long[] ordering = new long[(int) Math.pow(4, pivotLength)];
+//        while (ranks.size() > 0) {
+//            ordering[i] = ranks.pop();
+//            i++;
+//        }
+//        return ordering;
+//
+//    }
 
     public void exportBinningForCpp(long[] statFrequency) {
         File file = new File("freq.txt");
@@ -71,6 +101,14 @@ public class ExportUtils {
                 bytesPerFile.put(Long.parseLong(listOfFiles[i].getName().replace("nodes", "")), listOfFiles[i].length());
         }
         return bytesPerFile;
+    }
+
+    public void writeToFile(long[] arr, String fileName) {
+        HashMap<Long, Long> map = new HashMap<>();
+        for (long i = 0; i < arr.length; i++) {
+            map.put(i, arr[(int)i]);
+        }
+        writeToFile(map, fileName);
     }
 
     public void writeToFile(AbstractMap<Long, Long> data, String fileName) {

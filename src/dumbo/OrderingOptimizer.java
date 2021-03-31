@@ -8,6 +8,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.AbstractMap;
+import java.util.Arrays;
 import java.util.HashMap;
 
 public class OrderingOptimizer {
@@ -16,26 +17,20 @@ public class OrderingOptimizer {
 
         String infile = null;
 
-        int k = 60, pivot_len = 8, bufferSize = 81920, numThreads = 20, hsmapCapacity = 10000000;
+        int k = 60, pivot_len = 8, bufferSize = 81920;
         int readLen = 124;
-        int numBlocks = (int) Math.pow(4, pivot_len);//256; 1000;//
-//        boolean readable = false;
         String orderingName = "uhs_sig_freq";
-        int xor = 0; //11101101;
         int numRounds = 0, elementsToPush = 0, samplesPerRound = 0, statSamples = 0;
         double punishPercentage = 1;
         String version = "10";
-        int partitionData = 0;
+        String kmerSetFile = null;
 
         if (args.length > 0 && args[0].equals("-help")) {
             System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
                     "Options Available: \n" +
-                    "[-NB numOfBlocks] : (Integer) Number Of Kmer Blocks. Default: 256" + "\n" +
                     "[-p pivotLength] : (Integer) Pivot Length. Default: 12" + "\n" +
-                    "[-t numOfThreads] : (Integer) Number Of Threads. Default: 1" + "\n" +
                     "[-b bufferSize] : (Integer) Read/Writer Buffer Size. Default: 8192" + "\n" +
-                    "[-o order] : lexico or sig or uhs or uhs_sig" + "\n" +
-                    "[-r readable] : (Boolean) Output Format: true means readable text, false means binary. Default: false" + "\n");
+                    "[-o order] : lexico or sig or uhs or uhs_sig" + "\n");
             return;
         }
 
@@ -46,10 +41,8 @@ public class OrderingOptimizer {
                 version = args[i + 1];
             else if (args[i].equals("-k"))
                 k = new Integer(args[i + 1]);
-            else if (args[i].equals("-NB"))
-                numBlocks = new Integer(args[i + 1]);
-            else if (args[i].equals("-partition"))
-                partitionData = new Integer(args[i + 1]);
+            else if (args[i].equals("-kmers-file"))
+                kmerSetFile = args[i + 1];
 //            else
 //				if(args[i].equals("-o"))
 //				orderingName = args[i+1];
@@ -59,10 +52,6 @@ public class OrderingOptimizer {
                 bufferSize = new Integer(args[i + 1]);
             else if (args[i].equals("-L"))
                 readLen = new Integer(args[i + 1]);
-            else if (args[i].equals("-t"))
-                numThreads = new Integer(args[i + 1]);
-//    		else if(args[i].equals("-r"))
-//    			readable = new Boolean(args[i+1]);
             else if (args[i].equals("-rounds"))
                 numRounds = new Integer(args[i + 1]);
             else if (args[i].equals("-samples"))
@@ -137,30 +126,21 @@ public class OrderingOptimizer {
                 break;
         }
 
-        if (partitionData == 1) {
+        if (kmerSetFile != null) {
             try {
                 ExportUtils exportUtils = new ExportUtils();
                 System.out.println("Program Configuration:");
                 System.out.print("Input File: " + infile + "\n" +
                         "Kmer Length: " + k + "\n" +
-                        "Read Length: " + readLen + "\n" +
                         "Pivot Length: " + pivot_len + "\n" +
-                        "# Of Threads: " + numThreads + "\n" +
                         "R/W Buffer Size: " + bufferSize + "\n" +
                         "Ordering: " + orderingName + "\n");
 
-                Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
-                Map map = new Map(k, (int) Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
+                MinimizerCounter minimizerCounter = new MinimizerCounter(k, kmerSetFile, pivot_len, bufferSize, ordering);
+                long[] counters = minimizerCounter.Run();
+                exportUtils.writeToFile(counters, orderingName + pivot_len + "_" + "kmers");
+                System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + Arrays.stream(counters).sum());
 
-
-                partition.Run();
-
-                AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-                exportUtils.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
-                System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
-
-                HashMap<Long, Long> bytesPerFile = exportUtils.getBytesPerFile();
-                exportUtils.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
 
             } catch (Exception E) {
                 System.out.println("Exception caught!");
