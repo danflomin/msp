@@ -138,7 +138,7 @@ public class Partition {
     }
 
     private int getNormalizedValue(int minValue) {
-        return Math.min(minValue, stringUtils.getReversedMmer(minValue, pivotLen)) % numOfBlocks;
+        return stringUtils.getNormalizedValue(minValue, pivotLen) % numOfBlocks;
     }
 
     private void tryCreateWriterForPmer(int prepos) throws IOException {

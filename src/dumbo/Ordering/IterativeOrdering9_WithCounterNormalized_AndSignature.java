@@ -29,42 +29,49 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
     private int mask;
     private long[] statFrequency;
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
-        this.inputFile = infile;
-        this.readLen = readLen;
-        this.bufSize = bufSize;
-        this.pivotLength = pivotLength;
-        this.k = k;
-        this.currentOrdering = initialOrdering.clone();
-        stringUtils = new StringUtils();
-        signatureUtils = new SignatureUtils(pivotLength);
-    }
+    private int numMmers;
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(int pivotLength, String infile, int readLen, int bufSize, int k) {
-        this(pivotLength, infile, readLen, bufSize, k, new long[(int) Math.pow(4, pivotLength)]);
-        for (int i = 0; i < (int) Math.pow(4, pivotLength); i++) {
-            int canonical = Math.min(i, stringUtils.getReversedMmer(i, pivotLength));
-            currentOrdering[i] = canonical;
-            currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
-        }
-        roundSamples = 100000;
-        rounds = 10000;
-        elementsToPush = 1;
-    }
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double percentagePunishment) {
-        this(pivotLength, infile, readLen, bufSize, k);
+    public IterativeOrdering9_WithCounterNormalized_AndSignature(
+            int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
+            int elementsToPush, int statisticsSamples, double percentagePunishment)
+    {
         this.roundSamples = roundSamples;
         this.rounds = rounds;
         this.elementsToPush = elementsToPush;
         this.statisticsSamples = statisticsSamples;
         this.percentagePunishment = percentagePunishment;
-        this.mask = (int) Math.pow(4, pivotLength) - 1;
+        numMmers = (int) Math.pow(4, pivotLength);
+        this.mask =  numMmers - 1;
+        this.inputFile = infile;
+        this.readLen = readLen;
+        this.bufSize = bufSize;
+        this.pivotLength = pivotLength;
+        this.k = k;
+        stringUtils = new StringUtils();
+        signatureUtils = new SignatureUtils(pivotLength);
+        currentOrdering = new long[(int) Math.pow(4, pivotLength)];
+    }
+
+    public IterativeOrdering9_WithCounterNormalized_AndSignature(
+            int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
+            int elementsToPush, int statisticsSamples, double percentagePunishment, long[] initialOrdering)
+    {
+        this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment);
+        currentOrdering = initialOrdering.clone();
+        if(currentOrdering.length != numMmers)
+            throw new IllegalArgumentException("initialOrdering is not of correct size");
     }
 
 
     public void initFrequency() throws IOException {
-        int numMmers = (int) Math.pow(4, pivotLength);
+
+        for (int i = 0; i < numMmers; i++) {
+            int canonical = Math.min(i, stringUtils.getReversedMmer(i, pivotLength));
+            currentOrdering[i] = canonical;
+            currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
+        }
+
         for (int i = 0; i < numMmers; i++) {
             if (!signatureUtils.isAllowed(i) && i < stringUtils.getReversedMmer(i, pivotLength)) {
                 currentOrdering[i] += numMmers;
@@ -79,8 +86,8 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         FileReader frG = new FileReader(inputFile);
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
-        statFrequency = new long[(int) Math.pow(4, pivotLength)];
-        HashMap<Integer, HashSet<String>> pmerFrequency = new HashMap<>((int) Math.pow(4, pivotLength));
+        statFrequency = new long[numMmers];
+        HashMap<Integer, HashSet<String>> pmerFrequency = new HashMap<>(numMmers);
 
         String describeline;
         char[] lineCharArray = new char[readLen];
@@ -101,7 +108,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
 
                 min_pos = findSmallest(lineCharArray, 0, k);
                 minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-                minValueNormalized = getNormalizedValue(minValue);
+                minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
                 currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
 
                 updateStatistics(roundNumber, pmerFrequency, minValueNormalized, line, 0);
@@ -114,7 +121,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
                         minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-                        minValueNormalized = getNormalizedValue(minValue);
+                        minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
 
                         updateStatistics(roundNumber, pmerFrequency, minValueNormalized, line, i);
                     } else {
@@ -122,7 +129,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
                         if (strcmp(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
-                            minValueNormalized = getNormalizedValue(minValue);
+                            minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
 
                             updateStatistics(roundNumber, pmerFrequency, minValueNormalized, line, i);
                         }
@@ -159,17 +166,15 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         else {
             if (!pmerFrequency.containsKey(minValueNormalized))
                 pmerFrequency.put(minValueNormalized, new HashSet<>());
-            pmerFrequency.get(minValueNormalized).add(stringUtils.getCanon(line.substring(startPosition, k + startPosition)));
+            pmerFrequency.get(minValueNormalized).add(stringUtils.getCanonical(line.substring(startPosition, k + startPosition)));
         }
     }
 
-    private int getNormalizedValue(int minValue) {
-        return Math.min(minValue, stringUtils.getReversedMmer(minValue, pivotLength));
-    }
+
 
 
     private void adaptOrdering(HashMap<Integer, HashSet<String>> pmerFrequency) {
-        int[] frequencies = new int[(int) Math.pow(4, pivotLength)];
+        int[] frequencies = new int[numMmers];
         for (Integer i : pmerFrequency.keySet()) {
             frequencies[i] = pmerFrequency.get(i).size();
         }
@@ -182,7 +187,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
                     biggestIndex = k;
                 }
             }
-            long newRank = currentOrdering[biggestIndex] + (int) ((int) Math.pow(4, pivotLength) * percentagePunishment);
+            long newRank = currentOrdering[biggestIndex] + (int) (numMmers * percentagePunishment);
             currentOrdering[biggestIndex] = newRank;
             currentOrdering[stringUtils.getReversedMmer(biggestIndex, pivotLength)] = newRank;
             frequencies[biggestIndex] = 0;

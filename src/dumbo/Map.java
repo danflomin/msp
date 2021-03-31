@@ -111,6 +111,10 @@ public class Map {
 
                     distinctKmersPerPartition.put((long) p, (long) nodes.size());
 
+                    for (String s: nodes) {
+
+                    }
+
                     nodes.clear();
                     nodes = null;
 

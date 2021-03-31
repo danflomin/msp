@@ -58,7 +58,7 @@ public class StringUtils {
         return rev;
     }
 
-    public String getCanon(String line) {
+    public String getCanonical(String line) {
         String x = new String(getReversedRead(line.toCharArray()));
         for (int i = 0; i < line.length(); i++) {
             if (line.charAt(i) < x.charAt(i))
@@ -67,5 +67,9 @@ public class StringUtils {
                 return x;
         }
         return x;
+    }
+
+    public int getNormalizedValue(int minValue, int pivotLength) {
+        return Math.min(minValue, getReversedMmer(minValue, pivotLength));
     }
 }
