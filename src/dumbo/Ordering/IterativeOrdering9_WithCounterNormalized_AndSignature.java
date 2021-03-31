@@ -30,19 +30,20 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
     private long[] statFrequency;
 
     private int numMmers;
+    private boolean useSignature;
 
 
     public IterativeOrdering9_WithCounterNormalized_AndSignature(
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
-            int elementsToPush, int statisticsSamples, double percentagePunishment)
-    {
+            int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature) {
         this.roundSamples = roundSamples;
         this.rounds = rounds;
         this.elementsToPush = elementsToPush;
         this.statisticsSamples = statisticsSamples;
         this.percentagePunishment = percentagePunishment;
         numMmers = (int) Math.pow(4, pivotLength);
-        this.mask =  numMmers - 1;
+        this.useSignature = useSignature;
+        this.mask = numMmers - 1;
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
@@ -55,11 +56,10 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
 
     public IterativeOrdering9_WithCounterNormalized_AndSignature(
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
-            int elementsToPush, int statisticsSamples, double percentagePunishment, long[] initialOrdering)
-    {
-        this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment);
+            int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, long[] initialOrdering) {
+        this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
         currentOrdering = initialOrdering.clone();
-        if(currentOrdering.length != numMmers)
+        if (currentOrdering.length != numMmers)
             throw new IllegalArgumentException("initialOrdering is not of correct size");
     }
 
@@ -72,10 +72,12 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
             currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
         }
 
-        for (int i = 0; i < numMmers; i++) {
-            if (!signatureUtils.isAllowed(i) && i < stringUtils.getReversedMmer(i, pivotLength)) {
-                currentOrdering[i] += numMmers;
-                currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] += numMmers;
+        if (useSignature) {
+            for (int i = 0; i < numMmers; i++) {
+                if (!signatureUtils.isAllowed(i) && i < stringUtils.getReversedMmer(i, pivotLength)) {
+                    currentOrdering[i] += numMmers;
+                    currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] += numMmers;
+                }
             }
         }
 
@@ -171,8 +173,6 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
     }
 
 
-
-
     private void adaptOrdering(HashMap<Integer, HashSet<String>> pmerFrequency) {
         int[] frequencies = new int[numMmers];
         for (Integer i : pmerFrequency.keySet()) {
@@ -203,8 +203,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         int currentValue = minValue;
         for (int i = from + 1; i <= to - pivotLength; i++) {
             currentValue = ((currentValue << 2) + StringUtils.valTable[a[i + pivotLength - 1] - 'A']) & mask;
-            if (strcmp(minValue, currentValue) > 0)
-            {
+            if (strcmp(minValue, currentValue) > 0) {
                 min_pos = i;
                 minValue = currentValue;
             }

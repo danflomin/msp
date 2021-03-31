@@ -69,6 +69,14 @@ public class OrderingOptimizer {
             }
         }
 
+        System.out.println("Optimizing an ordering:");
+        System.out.print("Input File: " + kmerSetFile + "\n" +
+                "Kmer Length: " + k + "\n" +
+                "Pivot Length: " + pivot_len + "\n" +
+                "R/W Buffer Size: " + bufferSize + "\n" +
+                "Read length" + readLen + "\n" +
+                "Ordering: " + orderingName + "\n");
+
 
         orderingName = "iterativeOrdering";
 
@@ -78,18 +86,18 @@ public class OrderingOptimizer {
         switch (version) {
 
             case "9-normalized": // good version
-                IterativeOrdering9_WithCounterNormalized ordering9_withCounterNormalized = new IterativeOrdering9_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-                ordering9_withCounterNormalized.initFrequency();
-                ordering9_withCounterNormalized.exportOrderingForCpp();
-                ordering9_withCounterNormalized.exportBinningForCpp();
-//                ordering = ordering9_withCounterNormalized;
+                IterativeOrdering9_WithCounterNormalized_AndSignature iterative = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false);
+                iterative.initFrequency();
+//                ordering9_withCounterNormalized.exportOrderingForCpp();
+//                ordering9_withCounterNormalized.exportBinningForCpp();
+                ordering = iterative;
                 break;
             case "9-normalized-signature": //
-                IterativeOrdering9_WithCounterNormalized_AndSignature ordering9_withCounterNormalized_andSignature = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-                ordering9_withCounterNormalized_andSignature.initFrequency();
+                IterativeOrdering9_WithCounterNormalized_AndSignature iterativeSignature = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, true);
+                iterativeSignature.initFrequency();
 //                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
 //                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
-                ordering = ordering9_withCounterNormalized_andSignature;
+                ordering = iterativeSignature;
                 System.out.println("lolz asdasd");
                 break;
             case "10":
@@ -129,8 +137,8 @@ public class OrderingOptimizer {
         if (kmerSetFile != null) {
             try {
                 ExportUtils exportUtils = new ExportUtils();
-                System.out.println("Program Configuration:");
-                System.out.print("Input File: " + infile + "\n" +
+                System.out.println("Counting minimizer appearances:");
+                System.out.print("Input File: " + kmerSetFile + "\n" +
                         "Kmer Length: " + k + "\n" +
                         "Pivot Length: " + pivot_len + "\n" +
                         "R/W Buffer Size: " + bufferSize + "\n" +
@@ -148,7 +156,6 @@ public class OrderingOptimizer {
             }
         }
     }
-
 
 
 }
