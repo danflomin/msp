@@ -85,13 +85,7 @@ public class OrderingOptimizer {
         System.out.println(version);
         switch(version)
         {
-            case "9": // good version
-                IterativeOrdering9 ordering9 = new IterativeOrdering9(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-                ordering9.initFrequency();
-                ordering9.exportOrderingForCpp();
-                ordering9.exportBinningForCpp();
-                ordering = ordering9;
-                break;
+
             case "9-normalized": // good version
                 IterativeOrdering9_WithCounterNormalized ordering9_withCounterNormalized = new IterativeOrdering9_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
                 ordering9_withCounterNormalized.initFrequency();
