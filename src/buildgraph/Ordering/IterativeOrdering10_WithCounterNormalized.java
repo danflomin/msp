@@ -1,6 +1,5 @@
 package buildgraph.Ordering;
 
-import buildgraph.Partition;
 import buildgraph.StringUtils;
 import net.agkn.hll.HLL;
 

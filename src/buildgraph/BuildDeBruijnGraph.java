@@ -2,13 +2,11 @@ package buildgraph;
 
 import buildgraph.Ordering.*;
 import buildgraph.Ordering.UHS.UHSFrequencySignatureOrdering;
-import buildgraph.Ordering.UHS.UHSSignatureOrdering;
 
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.AbstractMap;
 import java.util.HashMap;
 
@@ -174,7 +172,7 @@ public class BuildDeBruijnGraph {
                     "Ordering: " + orderingName + "\n");
 
 //            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
-            PartitionTrunc partition = new PartitionTrunc(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
+            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
             Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
 //            MapTrunc map = new MapTrunc(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
 

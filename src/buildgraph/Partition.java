@@ -1,10 +1,11 @@
 package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
-import buildgraph.Ordering.UHS.UHSOrderingBase;
+import buildgraph.Ordering.IOrderingPP;
 import buildgraph.Ordering.UHS.YaelUHSOrdering;
 
 import java.io.*;
+import java.util.HashSet;
 
 public class Partition {
 
@@ -20,7 +21,7 @@ public class Partition {
     private BufferedWriter[] bfwG;
 
     private int readLen;
-    private IOrdering ordering;
+    private IOrderingPP ordering;
 
     private StringUtils stringUtils;
 
@@ -28,8 +29,15 @@ public class Partition {
     private int minFile;
     private int maxFile;
 
+    private HashSet<Integer> currentMinimizers;
+    private byte[] finishedMinimizers;
+    private int maxMinimizersPerPass;
+    private boolean keepPassing;
 
-    public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering) {
+    private final int mask;
+
+
+    public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrderingPP ordering) {
         this.k = kk;
         this.inputfile = infile;
         this.numOfBlocks = numberOfBlocks;
@@ -39,27 +47,13 @@ public class Partition {
         this.ordering = ordering;
         this.stringUtils = new StringUtils();
         this.numOpenFiles = 0;
+        this.mask = (int) Math.pow(4, pivotLength) - 1;
+        finishedMinimizers = new byte[numOfBlocks];
+        currentMinimizers = new HashSet<>();
+        maxMinimizersPerPass = 10000;
+        keepPassing = true;
     }
 
-
-    private int findPosOfMin(char[] a, char[] b, int from, int to, int[] flag) throws IOException {
-
-        int len = a.length;
-        int pos1 = ordering.findSmallest(a, from, to);
-        int pos2 = ordering.findSmallest(b, len - to, len - from);
-
-        if (ordering.strcmp(a, b, pos1, pos2, pivotLen) < 0) {
-            flag[0] = 0;
-            return pos1;
-        } else {
-            flag[0] = 1;
-            return pos2;
-        }
-    }
-
-    private int calPosNew(char[] a, int from, int to) {
-        return stringUtils.getDecimal(a, from, to) % numOfBlocks;
-    }
 
     private long DistributeNodes() throws IOException {
         frG = new FileReader(inputfile);
@@ -67,15 +61,17 @@ public class Partition {
         fwG = new FileWriter[numOfBlocks];
         bfwG = new BufferedWriter[numOfBlocks];
 
+        currentMinimizers.clear();
+
         String describeline;
 
         int numSuperKmers = 0;
 
-        int prepos, substart = 0, subend, min_pos = -1;
+        int minPos = -1;
 
         char[] lineCharArray = new char[readLen];
+        int len = readLen;
 
-        int[] flag = new int[1];
 
         long cnt = 0, outcnt = 0;
 
@@ -83,121 +79,49 @@ public class Partition {
         if (!dir.exists())
             dir.mkdir();
 
-
+        int minValue, minValueNormalized, currentValue, start;
         while ((describeline = bfrG.readLine()) != null) {
 
             bfrG.read(lineCharArray, 0, readLen);
             bfrG.read();
 
-            prepos = -1;
             if (stringUtils.isReadLegal(lineCharArray)) {
 
-                substart = 0;
-
-                outcnt = cnt;
-
-                int len = readLen;
-
-                char[] revCharArray = stringUtils.getReversedRead(lineCharArray);
-
-                min_pos = findPosOfMin(lineCharArray, revCharArray, 0, k, flag);
-
-                cnt += 2;
+                minPos = ordering.findSmallest(lineCharArray, 0, k);
+                start = 0;
+                minValue = stringUtils.getDecimal(lineCharArray, minPos, minPos + pivotLen);
+                minValueNormalized = getNormalizedValue(minValue);
+                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLen, k);
 
                 int bound = len - k + 1;
-
                 for (int i = 1; i < bound; i++) {
+                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;//0xffff;
 
-                    if (i > (flag[0] == 0 ? min_pos : len - min_pos - pivotLen)) {
+                    if (i > minPos) {
+                        writeToFile(minValueNormalized, start, minPos + k, lineCharArray, 0);
 
-                        int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
+                        minPos = ordering.findSmallest(lineCharArray, i, i + k);
+                        start = i;
+                        minValue = stringUtils.getDecimal(lineCharArray, minPos, minPos + pivotLen);
+                        minValueNormalized = getNormalizedValue(minValue);
 
-                        min_pos = findPosOfMin(lineCharArray, revCharArray, i, i + k, flag);
-
-                        if (temp != (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen))) {
-                            prepos = temp;
-                            subend = i - 1 + k;
-
-
-                            writeToFile(prepos, substart, subend, lineCharArray, outcnt);
-                            numSuperKmers++;
-
-                            substart = i;
-                            outcnt = cnt;
-                        }
 
                     } else {
+                        int lastIndexInWindow = k + i - pivotLen;
+                        if (ordering.strcmp(currentValue, minValue) < 0) {
+                            writeToFile(minValueNormalized, start, lastIndexInWindow + pivotLen - 1, lineCharArray, 0);
 
-                        if (ordering.strcmp(lineCharArray, revCharArray, k + i - pivotLen, len - i - k, pivotLen) < 0) {
-                            if (ordering.strcmp(lineCharArray, flag[0] == 0 ? lineCharArray : revCharArray, k + i - pivotLen, min_pos, pivotLen) < 0) {
-                                boolean enter = true;
-                                if (ordering instanceof YaelUHSOrdering) {
-                                    if (!((YaelUHSOrdering) ordering).isInUHS(lineCharArray, k + i - pivotLen, k + i)) {
-                                        enter = false;
-                                    }
-                                }
-                                if (enter) {
-                                    int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
-
-                                    min_pos = k + i - pivotLen;
-
-                                    if (temp != calPosNew(lineCharArray, min_pos, min_pos + pivotLen)) {
-                                        prepos = temp;
-                                        subend = i - 1 + k;
-
-                                        writeToFile(prepos, substart, subend, lineCharArray, outcnt);
-                                        numSuperKmers++;
-
-
-                                        substart = i;
-                                        outcnt = cnt;
-                                    }
-
-                                    flag[0] = 0;
-                                }
-                            }
-                        } else {
-                            if (ordering.strcmp(revCharArray, flag[0] == 0 ? lineCharArray : revCharArray, len - i - k, min_pos, pivotLen) < 0) {
-                                boolean enter = true;
-                                if (ordering instanceof YaelUHSOrdering) {
-                                    if (!((YaelUHSOrdering) ordering).isInUHS(revCharArray, len - i - k, len - i - k + pivotLen)) {
-                                        enter = false;
-                                    }
-                                }
-                                if (enter) {
-                                    int temp = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
-
-                                    min_pos = -k - i + len;
-
-                                    if (temp != calPosNew(revCharArray, min_pos, min_pos + pivotLen)) {
-                                        prepos = temp;
-                                        subend = i - 1 + k;
-
-                                        writeToFile(prepos, substart, subend, lineCharArray, outcnt);
-                                        numSuperKmers++;
-
-
-                                        substart = i;
-                                        outcnt = cnt;
-                                    }
-                                    flag[0] = 1;
-                                }
-                            }
+                            start = lastIndexInWindow + pivotLen - k;
+                            minPos = lastIndexInWindow;
+                            minValue = currentValue;
+                            minValueNormalized = getNormalizedValue(minValue);
                         }
                     }
-
-                    cnt += 2;
                 }
-                subend = len;
-                prepos = (flag[0] == 0 ? calPosNew(lineCharArray, min_pos, min_pos + pivotLen) : calPosNew(revCharArray, min_pos, min_pos + pivotLen));
-
-                writeToFile(prepos, substart, subend, lineCharArray, outcnt);
-                numSuperKmers++;
-
+                writeToFile(minValueNormalized, start, len, lineCharArray, 0);
             }
         }
 
-        System.out.println("Largest ID is " + cnt);
         System.out.println("Num superkmers is = " + numSuperKmers);
 
         for (int i = 0; i < bfwG.length; i++) {
@@ -206,11 +130,21 @@ public class Partition {
                 fwG[i].close();
             }
         }
+        for (Integer i : currentMinimizers) {
+            finishedMinimizers[i] = 1;
+        }
+        if(currentMinimizers.size() < maxMinimizersPerPass)
+            keepPassing = false;
+        currentMinimizers.clear();
 
         bfrG.close();
         frG.close();
 
         return cnt;
+    }
+
+    private int getNormalizedValue(int minValue) {
+        return Math.min(minValue, stringUtils.getReversedMmer(minValue, pivotLen)) % numOfBlocks;
     }
 
     private void tryCreateWriterForPmer(int prepos) throws IOException {
@@ -234,8 +168,12 @@ public class Partition {
     }
 
     private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
-        if(minFile <= prepos && prepos < maxFile)
+        if(finishedMinimizers[prepos] == 0 && currentMinimizers.size() < maxMinimizersPerPass)
         {
+            currentMinimizers.add(prepos);
+        }
+
+        if (currentMinimizers.contains(prepos)) {
             tryCreateWriterForPmer(prepos);
 
             BufferedWriter writer = bfwG[prepos];
@@ -250,8 +188,7 @@ public class Partition {
         long time1 = 0;
         long t1 = System.currentTimeMillis();
         System.out.println("Distribute Nodes Begin!");
-        for(minFile = 0, maxFile=10000; minFile < numOfBlocks; minFile+= 10000, maxFile += 10000)
-        {
+        while (keepPassing){
             System.out.println("hi");
             DistributeNodes();
         }
