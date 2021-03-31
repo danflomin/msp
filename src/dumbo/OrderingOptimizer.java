@@ -3,13 +3,8 @@ package dumbo;
 import dumbo.Ordering.*;
 import dumbo.Ordering.UHS.UHSFrequencySignatureOrdering;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.util.AbstractMap;
 import java.util.Arrays;
-import java.util.HashMap;
 
 public class OrderingOptimizer {
 
@@ -86,14 +81,16 @@ public class OrderingOptimizer {
         switch (version) {
 
             case "9-normalized": // good version
-                IterativeOrdering9_WithCounterNormalized_AndSignature iterative = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false);
+                IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false);
                 iterative.initFrequency();
 //                ordering9_withCounterNormalized.exportOrderingForCpp();
 //                ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = iterative;
                 break;
             case "9-normalized-signature": //
-                IterativeOrdering9_WithCounterNormalized_AndSignature iterativeSignature = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, true);
+                IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, true);
                 iterativeSignature.initFrequency();
 //                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
 //                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();

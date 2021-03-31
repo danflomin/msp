@@ -8,7 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IOrderingPP {
+public class IterativeOrdering implements IOrderingPP {
     private String inputFile;
     private int readLen;
     private int bufSize;
@@ -33,7 +33,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
     private boolean useSignature;
 
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(
+    public IterativeOrdering(
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature) {
         this.roundSamples = roundSamples;
@@ -54,7 +54,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         currentOrdering = new long[(int) Math.pow(4, pivotLength)];
     }
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(
+    public IterativeOrdering(
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, long[] initialOrdering) {
         this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
