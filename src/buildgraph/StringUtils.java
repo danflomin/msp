@@ -51,4 +51,15 @@ public class StringUtils {
         }
         return revCharArray;
     }
+
+    public int getReversedMmer(int x, int length) {
+        int rev = 0;
+        int immer = ~x;
+        for (int i = 0; i < length; ++i) {
+            rev <<= 2;
+            rev |= immer & 0x3;
+            immer >>= 2;
+        }
+        return rev;
+    }
 }

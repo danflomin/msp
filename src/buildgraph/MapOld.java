@@ -6,25 +6,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 
-public class Map{
-	
+public class MapOld {
+
 	private int k;
 	private int numOfBlocks;
 	private int bufSize;
-	
+
 	private Object lock_blocks = new Object();
-	
+
 	private int capacity;
-	
+
 	private int blockID;
-	
+
 	private long forAndVal;
 	private long forAndVal32;
-	private StringUtils stringUtils;
 
 	private static int[] valTable = StringUtils.valTable;
 
-	public Map(int kk, int numberOfBlocks, int bufferSize, int HScapacity){
+	public MapOld(int kk, int numberOfBlocks, int bufferSize, int HScapacity){
 		this.k = kk;
 		this.numOfBlocks = numberOfBlocks;
 		this.bufSize = bufferSize;
@@ -32,8 +31,6 @@ public class Map{
 		this.blockID = 0;
 		this.forAndVal = (long)Math.pow(2, 2*(k-32)) - 1;
 		this.forAndVal32 = (long)Math.pow(2, 2*k) - 1;
-		stringUtils = new StringUtils();
-
 	}
 	
 	public class MyThread extends Thread{
@@ -54,10 +51,16 @@ public class Map{
 			
 			FileReader fr;
 			BufferedReader bfr;
-
+			FileWriter fw;
+			BufferedWriter bfw;
+			
+			
 			String line;
 			
 			int p,j;
+			long cnt;
+			Kmer64 k1, k1_rev;
+			
 			
 			try{
 				File dir = new File("Maps");
@@ -79,38 +82,130 @@ public class Map{
 								
 					fr = new FileReader("Nodes/nodes"+p);
 					bfr = new BufferedReader(fr, bufSize);
-
+					fw = new FileWriter("Maps/maps"+p);
+					bfw = new BufferedWriter(fw, bufSize);
 					
-					HashSet<String> nodes = new HashSet<String>(capacity);
+					HashMap<Kmer64,Long> nodes = new HashMap<Kmer64,Long>(capacity);
 					
 					while((line = bfr.readLine()) != null){
 						
 						String[] strs = line.split("\t");
-
-
+						cnt = Long.parseLong(strs[1]); 
+						
+						long preOriginal = -1, preReplace = -1, Original = -1, Replace = -1;
+						long diff = -1;
+						boolean newOut = true, next = false;
+						
+						Long ReplaceObj, Replace_revObj;
+						
 						char[] lineCharArray = strs[0].toCharArray();
-						String revLine = new String(stringUtils.getReversedRead(lineCharArray));
-
+						k1 = new Kmer64(lineCharArray,0,k,false);
+						k1_rev = new Kmer64(lineCharArray,0,k,true);
+						
 						int bound = strs[0].length() - k + 1;
 						
 						for(j = 0; j < bound; j++){
-
-							nodes.add(strs[0].substring(j, j + k));
-							nodes.add(revLine.substring(j, j + k));
+				
+							if(j != 0){
+								if(k > 32){
+									k1 = new Kmer64((k1.low<<2) + valTable[lineCharArray[k+j-1]-'A'], ((k1.high<<2) + valTable[lineCharArray[k+j-33]-'A']) & forAndVal);
+									k1_rev = new Kmer64((k1_rev.low>>>2) + ((k1_rev.high&3)<<62), (k1_rev.high>>>2) + ((long)((valTable[lineCharArray[k+j-1]-'A']^3))<<((k-33)<<1)));
+								}
+								else{
+									k1 = new Kmer64(((k1.low<<2) + valTable[lineCharArray[k+j-1]-'A']) & forAndVal32, 0);
+									k1_rev = new Kmer64((k1_rev.low>>>2) + ((long)((valTable[lineCharArray[k+j-1]-'A']^3))<<((k-1)<<1)), 0);
+								}
+							}
+							
+							ReplaceObj = nodes.get(k1);
+							Replace_revObj = nodes.get(k1_rev);
+							
+							if(ReplaceObj == null && Replace_revObj == null){
+								nodes.put(k1, cnt+j*2);
+								
+								if(!newOut && !next){
+									bfw.write(preOriginal+"\t"+preReplace);
+									bfw.newLine();
+									
+									newOut = true;
+								}
+								
+							}
+							else{
+								if(ReplaceObj!=null){
+									Original = cnt+j*2;
+									Replace = ReplaceObj;
+								}
+								else{
+									Original = cnt+j*2;
+									Replace = Replace_revObj+1;
+								}
+								
+								if(newOut){
+									bfw.write(Original+"\t"+Replace+"\t");
+									newOut = false;
+									next = true;
+								}
+								
+								else if(Original-preOriginal==2){
+									if(next){
+										diff = Replace - preReplace;
+										if(diff==2){
+											bfw.write("+\t");
+											next = false;
+										}
+										else if(diff==-2){
+											bfw.write("-\t");
+											next = false;
+										}
+										else{
+											bfw.write("\n"+Original+"\t"+Replace+"\t");
+										}
+									}
+									else{
+										if(Replace - preReplace != diff){
+											bfw.write(preOriginal+"\t"+preReplace);
+											bfw.newLine();
+											
+											bfw.write(Original+"\t"+Replace+"\t");
+											next = true;
+										}
+									}
+								}
+								
+								else if(next==true){
+									
+									bfw.write("\n"+Original+"\t"+Replace+"\t");
+								}
+								
+								preOriginal = Original;
+								preReplace = Replace;
+							}
+							
 						}
-
+						
+						if(!newOut && !next){
+							bfw.write(preOriginal+"\t"+preReplace);
+							bfw.newLine();
+						}
+						else if(next){
+							bfw.newLine();
+						}
 					}
 
 					if(p%100 == 0) System.out.println(p);
 
-					distinctKmersPerPartition.put((long)p, (long)nodes.size() / 2);
+					distinctKmersPerPartition.put((long)p, (long)nodes.size());
 
 					nodes.clear();
 					nodes = null;
 					
-
+					bfw.close();
+					fw.close();
 					bfr.close();
 					fr.close();
+					bfw = null;
+					fw = null;
 					bfr = null;
 					fr = null;
 
@@ -203,7 +298,7 @@ public class Map{
     	}
     	
 		
-		Map bdgraph = new Map(k, numBlocks, bufferSize, hsmapCapacity);
+		MapOld bdgraph = new MapOld(k, numBlocks, bufferSize, hsmapCapacity);
 	
 		try{
 			System.out.println("Program Configuration:");

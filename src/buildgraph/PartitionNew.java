@@ -1,12 +1,12 @@
 package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
-import buildgraph.Ordering.UHS.UHSOrderingBase;
 import buildgraph.Ordering.UHS.YaelUHSOrdering;
 
 import java.io.*;
+import java.util.HashSet;
 
-public class Partition {
+public class PartitionNew {
 
     private int k;
     private String inputfile;
@@ -28,8 +28,12 @@ public class Partition {
     private int minFile;
     private int maxFile;
 
+    private int[] finishedMinimizers;
+    private HashSet<Integer> currentMinimizers;
+    private boolean shouldContinue;
 
-    public Partition(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering) {
+
+    public PartitionNew(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering) {
         this.k = kk;
         this.inputfile = infile;
         this.numOfBlocks = numberOfBlocks;
@@ -39,6 +43,9 @@ public class Partition {
         this.ordering = ordering;
         this.stringUtils = new StringUtils();
         this.numOpenFiles = 0;
+        finishedMinimizers = new int[numberOfBlocks];
+        currentMinimizers = new HashSet<>();
+        shouldContinue = true;
     }
 
 
@@ -206,7 +213,16 @@ public class Partition {
                 fwG[i].close();
             }
         }
-
+        if(currentMinimizers.size() <15000)
+        {
+            shouldContinue = false;
+        }
+        else{
+            for (Integer i : currentMinimizers) {
+                finishedMinimizers[i] = 1;
+            }
+            currentMinimizers.clear();
+        }
         bfrG.close();
         frG.close();
 
@@ -234,7 +250,11 @@ public class Partition {
     }
 
     private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
-        if(minFile <= prepos && prepos < maxFile)
+        if(finishedMinimizers[prepos] == 0 && currentMinimizers.size() < 15000){
+            currentMinimizers.add(prepos);
+        }
+        if(currentMinimizers.contains(prepos))
+        //if(minFile <= prepos && prepos < maxFile)
         {
             tryCreateWriterForPmer(prepos);
 
@@ -250,11 +270,16 @@ public class Partition {
         long time1 = 0;
         long t1 = System.currentTimeMillis();
         System.out.println("Distribute Nodes Begin!");
-        for(minFile = 0, maxFile=10000; minFile < numOfBlocks; minFile+= 10000, maxFile += 10000)
+        while (shouldContinue)
         {
             System.out.println("hi");
             DistributeNodes();
         }
+//        for(minFile = 0, maxFile=10000; minFile < numOfBlocks; minFile+= 10000, maxFile += 10000)
+//        {
+//            System.out.println("hi");
+//            DistributeNodes();
+//        }
         long t2 = System.currentTimeMillis();
         time1 = (t2 - t1) / 1000;
         System.out.println("Time used for distributing nodes: " + time1 + " seconds!");

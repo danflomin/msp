@@ -18,9 +18,9 @@ public class BuildDeBruijnGraph {
 
         String infile = null;
 
-        int k = 60, pivot_len = 8, bufferSize = 8192, numThreads = 20, hsmapCapacity = 10000000;
+        int k = 60, pivot_len = 8, bufferSize = 81920, numThreads = 20, hsmapCapacity = 10000000;
         int readLen = 124;
-//        int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
+        int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
 //        boolean readable = false;
         String orderingName = "uhs_sig_freq";
         int xor = 0; //11101101;
@@ -47,8 +47,8 @@ public class BuildDeBruijnGraph {
                 version = args[i + 1];
             else if (args[i].equals("-k"))
                 k = new Integer(args[i + 1]);
-//    		else if(args[i].equals("-NB"))
-//    			numBlocks = new Integer(args[i+1]);
+    		else if(args[i].equals("-NB"))
+    			numBlocks = new Integer(args[i+1]);
 //            else
 //				if(args[i].equals("-o"))
 //				orderingName = args[i+1];
@@ -122,6 +122,14 @@ public class BuildDeBruijnGraph {
                 ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = ordering9_withCounterNormalized;
                 break;
+            case "9-normalized-signature": //
+                IterativeOrdering9_WithCounterNormalized_AndSignature ordering9_withCounterNormalized_andSignature = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
+                ordering9_withCounterNormalized_andSignature.initFrequency();
+                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
+                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
+                ordering = ordering9_withCounterNormalized_andSignature;
+                System.out.println("lolz asdasd");
+                break;
             case "10":
                 IterativeOrdering10_WithCounterNormalized ordering10 = new IterativeOrdering10_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
                 ordering10.initFrequency();
@@ -148,36 +156,42 @@ public class BuildDeBruijnGraph {
                 frequencyOrdering.initFrequency();
                 ordering = frequencyOrdering;
                 break;
+            case "signature":
+                LexicographicSignatureOrdering signatureOrdering = new LexicographicSignatureOrdering(pivot_len);
+                ordering = signatureOrdering;
+                break;
         }
 
-//        try {
-//
-//            System.out.println("Program Configuration:");
-//            System.out.print("Input File: " + infile + "\n" +
-//                    "Kmer Length: " + k + "\n" +
-//                    "Read Length: " + readLen + "\n" +
-//                    "Pivot Length: " + pivot_len + "\n" +
-//                    "# Of Threads: " + numThreads + "\n" +
-//                    "R/W Buffer Size: " + bufferSize + "\n" +
-//                    "Ordering: " + orderingName + "\n");
-//
-//            Partition partition = new Partition(k, infile, (int)Math.pow(4, pivot_len), pivot_len, bufferSize, readLen, ordering);
-//            Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
-//
-//
-//            partition.Run();
-//
-//            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-//            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
-//            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
-//
-//            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
-//            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
-//
-//        } catch (Exception E) {
-//            System.out.println("Exception caught!");
-//            E.printStackTrace();
-//        }
+        try {
+
+            System.out.println("Program Configuration:");
+            System.out.print("Input File: " + infile + "\n" +
+                    "Kmer Length: " + k + "\n" +
+                    "Read Length: " + readLen + "\n" +
+                    "Pivot Length: " + pivot_len + "\n" +
+                    "# Of Threads: " + numThreads + "\n" +
+                    "R/W Buffer Size: " + bufferSize + "\n" +
+                    "Ordering: " + orderingName + "\n");
+
+//            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
+            PartitionTrunc partition = new PartitionTrunc(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
+            Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
+//            MapTrunc map = new MapTrunc(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
+
+
+            partition.Run();
+
+            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
+
+            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
+            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+
+        } catch (Exception E) {
+            System.out.println("Exception caught!");
+            E.printStackTrace();
+        }
 
 
     }
