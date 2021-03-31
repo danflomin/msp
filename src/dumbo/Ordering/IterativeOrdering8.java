@@ -1,12 +1,12 @@
-package buildgraph.Ordering;
+package dumbo.Ordering;
 
-import buildgraph.StringUtils;
+import dumbo.StringUtils;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class IterativeOrdering6 implements IOrdering {
+public class IterativeOrdering8 implements IOrdering {
     private String inputFile;
     private int readLen;
     private int bufSize;
@@ -21,12 +21,12 @@ public class IterativeOrdering6 implements IOrdering {
     private int rounds;
     private int elementsToPush;
 
-    private double maskRatio;
     private double percentagePunishment;
 
-    Integer[] temp = null;
+    private Integer[] temp = null;
+    private int mask;
 
-    public IterativeOrdering6(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
+    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
@@ -36,7 +36,7 @@ public class IterativeOrdering6 implements IOrdering {
         stringUtils = new StringUtils();
     }
 
-    public IterativeOrdering6(int pivotLength, String infile, int readLen, int bufSize, int k) {
+    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k) {
         this(pivotLength, infile, readLen, bufSize, k, new long[(int) Math.pow(4, pivotLength)]);
         for (int i = 0; i < (int) Math.pow(4, pivotLength); i++) {
             int canonical = Math.min(i, getReversed(i));
@@ -48,14 +48,14 @@ public class IterativeOrdering6 implements IOrdering {
         elementsToPush = 1;
     }
 
-    public IterativeOrdering6(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double maskRatio, double percentagePunishment) {
+    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double percentagePunishment) {
         this(pivotLength, infile, readLen, bufSize, k);
         this.roundSamples = roundSamples;
         this.rounds = rounds;
         this.elementsToPush = elementsToPush;
         this.statisticsSamples = statisticsSamples;
-        this.maskRatio = maskRatio;
         this.percentagePunishment = percentagePunishment;
+        this.mask = (int)Math.pow(4, pivotLength) - 1;
     }
 
 
@@ -95,7 +95,7 @@ public class IterativeOrdering6 implements IOrdering {
                 int bound = len - k + 1;
                 for (int i = 1; i < bound; i++) {
                     numSampled++;
-                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & 0xffff;//0xffff;
+                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;//0xffff;
 
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
@@ -119,6 +119,10 @@ public class IterativeOrdering6 implements IOrdering {
                 if (roundNumber <= rounds) {
                     numSampled = 0;
                     adaptOrdering(pmerFrequency);
+                    if(roundNumber % 100 == 0) {
+                        percentagePunishment *= 0.996;
+                        normalize();
+                    }
                     pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
                     if (roundNumber == rounds) {
                         System.out.println("Sampling for binning round");
@@ -137,17 +141,12 @@ public class IterativeOrdering6 implements IOrdering {
 
 
     private void adaptOrdering(long[] pmerFrequency) {
-        boolean[] mask = new boolean[pmerFrequency.length];
-        for (int i = 0; i < mask.length; i++) {
-            if (Math.random() < 1 - maskRatio)
-                mask[i] = true;
-        }
 // TODO : if biggest is smaller than (samples / 4^(m-1))/5
         for (int i = 0; i < elementsToPush; i++) {
             long biggest = -1;
             int biggestIndex = -1;
             for (int k = 0; k < pmerFrequency.length; k++) {
-                if (mask[k] && pmerFrequency[k] > biggest) {
+                if (pmerFrequency[k] > biggest) {
                     biggest = pmerFrequency[k];
                     biggestIndex = k;
                 }
@@ -158,7 +157,6 @@ public class IterativeOrdering6 implements IOrdering {
             pmerFrequency[biggestIndex] = 0;
             pmerFrequency[getReversed(biggestIndex)] = 0;
         }
-        normalize();
     }
 
     private int getReversed(int x) {

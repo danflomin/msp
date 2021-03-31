@@ -1,12 +1,12 @@
-package buildgraph.Ordering;
+package dumbo.Ordering;
 
-import buildgraph.StringUtils;
+import dumbo.StringUtils;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class IterativeOrdering8 implements IOrdering {
+public class IterativeUHSOrdering8 implements IOrdering {
     private String inputFile;
     private int readLen;
     private int bufSize;
@@ -21,12 +21,17 @@ public class IterativeOrdering8 implements IOrdering {
     private int rounds;
     private int elementsToPush;
 
+    private double maskRatio;
     private double percentagePunishment;
 
-    private Integer[] temp = null;
-    private int mask;
+    Integer[] temp = null;
 
-    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
+    byte[] UHSElements;
+    private  int sizeOfUHS;
+
+    private  int mask;
+
+    public IterativeUHSOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
@@ -36,30 +41,41 @@ public class IterativeOrdering8 implements IOrdering {
         stringUtils = new StringUtils();
     }
 
-    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k) {
+    public IterativeUHSOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k) {
         this(pivotLength, infile, readLen, bufSize, k, new long[(int) Math.pow(4, pivotLength)]);
-        for (int i = 0; i < (int) Math.pow(4, pivotLength); i++) {
-            int canonical = Math.min(i, getReversed(i));
-            currentOrdering[i] = canonical;
-            currentOrdering[getReversed(i)] = canonical;
-        }
         roundSamples = 100000;
         rounds = 10000;
         elementsToPush = 1;
     }
 
-    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double percentagePunishment) {
+    public IterativeUHSOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double maskRatio, double percentagePunishment) throws IOException {
         this(pivotLength, infile, readLen, bufSize, k);
         this.roundSamples = roundSamples;
         this.rounds = rounds;
         this.elementsToPush = elementsToPush;
         this.statisticsSamples = statisticsSamples;
+        this.maskRatio = maskRatio;
         this.percentagePunishment = percentagePunishment;
+        this.UHSElements = uhsBitSet();
         this.mask = (int)Math.pow(4, pivotLength) - 1;
     }
 
 
     public void initFrequency() throws IOException {
+        int rank = 1;
+        for (int i = 0; i < (int) Math.pow(4, pivotLength); i++) {
+            if(UHSElements[i] == 1 && currentOrdering[i] == 0)
+            {
+                currentOrdering[i] = rank;
+                currentOrdering[getReversed(i)] = rank;
+                rank++;
+            }
+            else
+            {
+                currentOrdering[i] = Long.MAX_VALUE-i;
+            }
+        }
+        sizeOfUHS = rank;
 
         boolean keepSample = true;
         int numSampled = 0;
@@ -119,10 +135,8 @@ public class IterativeOrdering8 implements IOrdering {
                 if (roundNumber <= rounds) {
                     numSampled = 0;
                     adaptOrdering(pmerFrequency);
-                    if(roundNumber % 100 == 0) {
+                    if(roundNumber % 100 == 0)
                         percentagePunishment *= 0.996;
-                        normalize();
-                    }
                     pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
                     if (roundNumber == rounds) {
                         System.out.println("Sampling for binning round");
@@ -137,26 +151,28 @@ public class IterativeOrdering8 implements IOrdering {
         }
         bfrG.close();
         frG.close();
+        for(int i = 0 ; i<UHSElements.length; UHSElements[i]=1, i++); normalize();
     }
 
 
     private void adaptOrdering(long[] pmerFrequency) {
-// TODO : if biggest is smaller than (samples / 4^(m-1))/5
         for (int i = 0; i < elementsToPush; i++) {
             long biggest = -1;
             int biggestIndex = -1;
             for (int k = 0; k < pmerFrequency.length; k++) {
-                if (pmerFrequency[k] > biggest) {
+                if (UHSElements[k] == 1 && pmerFrequency[k] > biggest) {
                     biggest = pmerFrequency[k];
                     biggestIndex = k;
                 }
             }
-            long newRank = currentOrdering[biggestIndex] + (int) ((int) Math.pow(4, pivotLength) * percentagePunishment);
+            long newRank = currentOrdering[biggestIndex] + (int) (sizeOfUHS * percentagePunishment);
             currentOrdering[biggestIndex] = newRank;
             currentOrdering[getReversed(biggestIndex)] = newRank;
             pmerFrequency[biggestIndex] = 0;
             pmerFrequency[getReversed(biggestIndex)] = 0;
         }
+
+        //normalize();
     }
 
     private int getReversed(int x) {
@@ -207,7 +223,9 @@ public class IterativeOrdering8 implements IOrdering {
         }
         Arrays.sort(temp, Comparator.comparingLong(a -> currentOrdering[a]));
         for(int i = 0 ; i<temp.length; i++){
-            currentOrdering[i] = temp[i];
+            if(UHSElements[i] == 1)
+                currentOrdering[i] = temp[i];
+            // shouldnt be a case where a non UHS element update is meaningful
         }
     }
 
@@ -262,5 +280,34 @@ public class IterativeOrdering8 implements IOrdering {
             } catch (Exception e) {
             }
         }
+    }
+
+    private byte[] uhsBitSet() throws IOException {
+        int n = (int) Math.pow(4, pivotLength);
+        int i = 0;
+        byte[] bits = new byte[n];
+
+        String DocksFile = "res_" + pivotLength + ".txt";
+        FileReader frG = new FileReader(DocksFile);
+        int count = 0;
+
+        BufferedReader reader;
+        try {
+            reader = new BufferedReader(frG);
+            String line;
+            while ((line = reader.readLine()) != null) {
+                i = stringUtils.getDecimal(line.toCharArray(), 0, pivotLength);
+                bits[i] = 1;
+                bits[getReversed(i)] = 1;
+                count++;
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println(count);
+        frG.close();
+
+        return bits;
     }
 }

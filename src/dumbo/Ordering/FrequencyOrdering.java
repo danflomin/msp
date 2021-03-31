@@ -1,73 +1,37 @@
-package buildgraph.Ordering.UHS;
+package dumbo.Ordering;
 
-import buildgraph.StringUtils;
+import dumbo.StringUtils;
 
 import java.io.*;
 import java.util.Arrays;
-import java.util.Comparator;
 
-public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
+public class FrequencyOrdering implements IOrdering {
+    private int pivotLength;
     private String inputFile;
     private int readLen;
     private int bufSize;
     private long[] pmerFrequency;
-    private int k;
-    private int numStats;
-    private boolean isInit;
-
     private long[] statsFrequency;
+    private int numSamples;
+    private int numStats;
+    private int k;
+    private StringUtils stringUtils;
     private int mask;
 
-    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, int k, int numStats) throws IOException {
-        super(0, pivotLen, useSignature);
+    public FrequencyOrdering(int pivotLen, String infile, int readLen, int bufSize, int numSamples, int numStats, int k) {
+        pivotLength = pivotLen;
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
         pmerFrequency = new long[(int)Math.pow(4, pivotLen)];
-        this.k = k;
+        this.numSamples = numSamples;
         this.numStats = numStats;
-        isInit = false;
+        this.k = k;
+        stringUtils = new StringUtils();
         mask = (int)Math.pow(4, pivotLen) - 1;
     }
 
-    @Override
-    public void initRank() throws IOException {
-        initFrequency();
-        super.initRank();
-        isRankInit = true;
-    }
-
-    protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
-        int baseCompareValue = strcmpBase(x, y);
-        if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
-            return baseCompareValue;
-        }
-
-        // from down here - both in UHS
-
-        if(useSignature){
-            if (!xAllowed && yAllowed) {
-                return 1;
-            } else if (!yAllowed && xAllowed) {
-                return -1;
-            }
-        }
-
-        // both allowed or both not allowed
-        if(pmerFrequency[x] == pmerFrequency[y]){
-            if(x<y)
-                return -1;
-            else
-                return 1;
-        }
-        else if(pmerFrequency[x] < pmerFrequency[y])
-            return -1;
-        else
-            return 1;
-
-    }
-
-    private void initFrequency() throws IOException {
+    public void initFrequency() throws IOException {
         FileReader frG = new FileReader(inputFile);
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
@@ -85,22 +49,25 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
 
             if (stringUtils.isReadLegal(lineCharArray)) {
                 char[] revCharArray = stringUtils.getReversedRead(lineCharArray);
-                for (int i = 0; i < lineCharArray.length-pivotLen; i++) {
+                for (int i = 0; i < lineCharArray.length-pivotLength; i++) {
 
-                    int lineValue = stringUtils.getDecimal(lineCharArray, i, i+pivotLen);
+                    int lineValue = stringUtils.getDecimal(lineCharArray, i, i+pivotLength);
                     pmerFrequency[lineValue] += 1;
 
-                    int revValue = stringUtils.getDecimal(revCharArray, i, i+pivotLen);
+                    int revValue = stringUtils.getDecimal(revCharArray, i, i+pivotLength);
                     pmerFrequency[revValue] += 1;
 
                     counter++;
                 }
-                if(counter > 1000000){
+                if(counter > numSamples){
                     break;
                 }
             }
         }
+
+        normalize();
         initStats(bfrG);
+
         bfrG.close();
         frG.close();
     }
@@ -110,7 +77,7 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         int numSampled = 0;
         boolean keepSample = true;
 
-        statsFrequency = new long[(int) Math.pow(4, pivotLen)];
+        statsFrequency = new long[(int) Math.pow(4, pivotLength)];
 
         String describeline;
         char[] lineCharArray = new char[readLen];
@@ -130,8 +97,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
             if (stringUtils.isReadLegal(lineCharArray)) {
 
                 min_pos = findSmallest(lineCharArray, 0, k);
-                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
-                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLen, k);
+                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
+                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
 
                 statsFrequency[minValue]++;
 
@@ -142,12 +109,12 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
 
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
-                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
+                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
 
 
                         statsFrequency[minValue]++;
                     } else {
-                        int lastIndexInWindow = k + i - pivotLen;
+                        int lastIndexInWindow = k + i - pivotLength;
                         if (strcmp(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
@@ -162,11 +129,73 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         }
     }
 
-//    public int[] getNormalizedForm()
-//    {
-//        int[] ret = rankOfPmer.clone();
-//        return ret;
-//    }
+    public long[] getRawOrdering()
+    {
+        return pmerFrequency.clone();
+    }
+
+
+    private void normalize() {
+        Integer[] temp = new Integer[pmerFrequency.length];
+        for (int i = 0; i < temp.length; temp[i] = i, i++) ;
+
+        Arrays.sort(temp, this::strcmp);
+        for(int i = 0 ; i<temp.length; i++){
+            pmerFrequency[i] = temp[i];
+        }
+
+        for(int i = 0 ; i<temp.length; i++){
+            int rev = getReversed(i);
+            long min = Math.max(pmerFrequency[i], pmerFrequency[rev]);
+            pmerFrequency[i] = min;
+            pmerFrequency[rev] = min;
+        }
+
+    }
+
+    private int getReversed(int x) {
+        int rev = 0;
+        int immer = ~x;
+        for (int i = 0; i < pivotLength; ++i) {
+            rev <<= 2;
+            rev |= immer & 0x3;
+            immer >>= 2;
+        }
+        return rev;
+    }
+
+
+    @Override
+    public int findSmallest(char[] a, int from, int to) throws IOException {
+        int min_pos = from;
+        for (int i = from + 1; i <= to - pivotLength; i++) {
+            if (strcmp(a, a, min_pos, i, pivotLength) > 0)
+                min_pos = i;
+        }
+        return min_pos;
+    }
+
+    @Override
+    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
+        int x = stringUtils.getDecimal(a, froma, froma + pivotLength);
+        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLength);
+
+        return strcmp(x,y);
+    }
+
+    public int strcmp(int x, int y)
+    {
+        if (x == y) return 0;
+        if (pmerFrequency[x] == pmerFrequency[y]) {
+            if(x<y)
+                return -1;
+            return 1;
+        }
+        if(pmerFrequency[x] < pmerFrequency[y])
+            return -1;
+        return 1;
+    }
+
 
     public void exportOrderingForCpp() {
         File file = new File("ranks.txt");
@@ -176,8 +205,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         try {
             bf = new BufferedWriter(new FileWriter(file));
 
-            for (int i = 0; i < rankOfPmer.length; i++) {
-                bf.write(Long.toString(rankOfPmer[i]));
+            for (int i = 0; i < pmerFrequency.length; i++) {
+                bf.write(Long.toString(pmerFrequency[i]));
                 bf.newLine();
             }
             bf.flush();
@@ -219,8 +248,4 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
             }
         }
     }
-
-
-
-
 }
