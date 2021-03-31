@@ -8,7 +8,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IOrdering {
+public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IOrderingPP {
     private String inputFile;
     private int readLen;
     private int bufSize;
@@ -232,9 +232,10 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         return strcmp(x,y);
     }
 
+    @Override
     public int strcmp(int x, int y) {
-        if (x == y || y == getReversed(x)) return 0;
-//        if (x == y) return 0;
+//        if (x == y || y == getReversed(x)) return 0;
+        if (x == y) return 0;
         if (currentOrdering[x] < currentOrdering[y]) return -1;
         return 1;
     }
@@ -302,5 +303,10 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
             } catch (Exception e) {
             }
         }
+    }
+
+    @Override
+    public long getRank(int mmer) {
+        return currentOrdering[mmer];
     }
 }

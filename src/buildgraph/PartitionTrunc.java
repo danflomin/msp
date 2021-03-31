@@ -1,9 +1,11 @@
 package buildgraph;
 
 import buildgraph.Ordering.IOrdering;
+import buildgraph.Ordering.IOrderingPP;
 import buildgraph.Ordering.UHS.YaelUHSOrdering;
 
 import java.io.*;
+import java.util.HashSet;
 
 public class PartitionTrunc {
 
@@ -19,7 +21,7 @@ public class PartitionTrunc {
     private BufferedWriter[] bfwG;
 
     private int readLen;
-    private IOrdering ordering;
+    private IOrderingPP ordering;
 
     private StringUtils stringUtils;
 
@@ -27,8 +29,10 @@ public class PartitionTrunc {
     private int minFile;
     private int maxFile;
 
+    private  int mask;
 
-    public PartitionTrunc(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrdering ordering) {
+
+    public PartitionTrunc(int kk, String infile, int numberOfBlocks, int pivotLength, int bufferSize, int readLen, IOrderingPP ordering) {
         this.k = kk;
         this.inputfile = infile;
         this.numOfBlocks = numberOfBlocks;
@@ -38,6 +42,8 @@ public class PartitionTrunc {
         this.ordering = ordering;
         this.stringUtils = new StringUtils();
         this.numOpenFiles = 0;
+        this.mask = (int) Math.pow(4, pivotLength) - 1;
+
     }
 
 
@@ -66,6 +72,8 @@ public class PartitionTrunc {
         int prepos, substart = 0, subend, min_pos = -1;
 
         char[] lineCharArray = new char[readLen];
+        int len = readLen;
+
 
         long cnt = 0, outcnt = 0;
 
@@ -73,7 +81,7 @@ public class PartitionTrunc {
         if (!dir.exists())
             dir.mkdir();
 
-
+        int minValue, minValueNormalized, currentValue, start;
         while ((describeline = bfrG.readLine()) != null) {
 
             bfrG.read(lineCharArray, 0, readLen);
@@ -82,27 +90,41 @@ public class PartitionTrunc {
             prepos = -1;
             if (stringUtils.isReadLegal(lineCharArray)) {
 
-                outcnt = cnt;
-
-                int len = readLen;
-
-                cnt += 2;
+                min_pos = ordering.findSmallest(lineCharArray, 0, k);
+                start = 0;
+                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
+                minValueNormalized = Math.min(minValue, stringUtils.getReversedMmer(minValue, pivotLen))  % numOfBlocks;
+                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLen, k);
 
                 int bound = len - k + 1;
+                for (int i = 1; i < bound; i++) {
+                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;//0xffff;
 
-                for (int i = 0; i < bound; i++) {
-                    min_pos = findPosOfMin(lineCharArray, i, i + k);
-                    prepos = calPosNew(lineCharArray, min_pos, min_pos+pivotLen);
-                    writeToFile(prepos, i, i+k, lineCharArray, outcnt);
-                    numSuperKmers++;
+                    if (i > min_pos) {
+                        writeToFile(minValueNormalized, start, min_pos+k,lineCharArray, 0);
 
-                    outcnt = cnt;
-                    cnt += 2;
+                        min_pos = ordering.findSmallest(lineCharArray, i, i + k);
+                        start = i;
+                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
+                        minValueNormalized = Math.min(minValue, stringUtils.getReversedMmer(minValue, pivotLen)) % numOfBlocks;
+
+
+                    } else {
+                        int lastIndexInWindow = k + i - pivotLen;
+                        if (ordering.strcmp(currentValue, minValue) < 0) {
+                            writeToFile(minValueNormalized, start, lastIndexInWindow+pivotLen - 1,lineCharArray, 0);
+
+                            start = lastIndexInWindow + pivotLen - k;
+                            min_pos = lastIndexInWindow;
+                            minValue = currentValue;
+                            minValueNormalized = Math.min(minValue, stringUtils.getReversedMmer(minValue, pivotLen))  % numOfBlocks;
+                        }
+                    }
                 }
+                writeToFile(minValueNormalized, start, len, lineCharArray, 0);
             }
         }
 
-        System.out.println("Largest ID is " + cnt);
         System.out.println("Num superkmers is = " + numSuperKmers);
 
         for (int i = 0; i < bfwG.length; i++) {

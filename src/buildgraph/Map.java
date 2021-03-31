@@ -94,16 +94,38 @@ public class Map{
 						int bound = strs[0].length() - k + 1;
 						
 						for(j = 0; j < bound; j++){
-
-							nodes.add(strs[0].substring(j, j + k));
-							nodes.add(revLine.substring(j, j + k));
+							String reg = strs[0].substring(j, j + k);
+							String rev = new String(stringUtils.getReversedRead(reg.toCharArray()));
+							if(reg.equals(rev))
+							{
+								nodes.add(rev);
+							}
+							else{
+								boolean didAdd = false;
+								for (int i = 0; i < k; i++) {
+									if(rev.charAt(i) < reg.charAt(i))
+									{
+										nodes.add(rev);
+										didAdd = true;
+										break;
+									}
+									else if(reg.charAt(i) < rev.charAt(i))
+									{
+										nodes.add(rev);
+										didAdd = true;
+										break;
+									}
+								}
+								if(!didAdd)
+									nodes.add(reg);
+							}
 						}
 
 					}
 
 					if(p%100 == 0) System.out.println(p);
 
-					distinctKmersPerPartition.put((long)p, (long)nodes.size() / 2);
+					distinctKmersPerPartition.put((long)p, (long)nodes.size());
 
 					nodes.clear();
 					nodes = null;

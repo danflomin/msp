@@ -174,7 +174,7 @@ public class BuildDeBruijnGraph {
                     "Ordering: " + orderingName + "\n");
 
 //            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
-            PartitionTrunc partition = new PartitionTrunc(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
+            PartitionTrunc partition = new PartitionTrunc(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
             Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
 //            MapTrunc map = new MapTrunc(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
 
