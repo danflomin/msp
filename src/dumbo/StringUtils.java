@@ -17,11 +17,6 @@ public class StringUtils {
         return val;
     }
 
-    public int getRDecimal(char[] a, char[] b, int from, int to){
-
-        return Math.min(getDecimal(a, from, to), getDecimal(b, from, to));
-    }
-
     public long getLDecimal(char[] a, int from, int to){
 
         long val=0;
@@ -61,5 +56,16 @@ public class StringUtils {
             immer >>= 2;
         }
         return rev;
+    }
+
+    public String getCanon(String line) {
+        String x = new String(getReversedRead(line.toCharArray()));
+        for (int i = 0; i < line.length(); i++) {
+            if (line.charAt(i) < x.charAt(i))
+                return line;
+            else if (line.charAt(i) > x.charAt(i))
+                return x;
+        }
+        return x;
     }
 }

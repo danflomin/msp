@@ -18,13 +18,14 @@ public class OrderingOptimizer {
 
         int k = 60, pivot_len = 8, bufferSize = 81920, numThreads = 20, hsmapCapacity = 10000000;
         int readLen = 124;
-        int numBlocks = (int)Math.pow(4, pivot_len);//256; 1000;//
+        int numBlocks = (int) Math.pow(4, pivot_len);//256; 1000;//
 //        boolean readable = false;
         String orderingName = "uhs_sig_freq";
         int xor = 0; //11101101;
         int numRounds = 0, elementsToPush = 0, samplesPerRound = 0, statSamples = 0;
         double punishPercentage = 1;
         String version = "10";
+        int partitionData = 0;
 
         if (args.length > 0 && args[0].equals("-help")) {
             System.out.print("Usage: java -jar BuildDeBruijnGraph.jar -in InputPath -k k -L readLength[options]\n" +
@@ -45,8 +46,10 @@ public class OrderingOptimizer {
                 version = args[i + 1];
             else if (args[i].equals("-k"))
                 k = new Integer(args[i + 1]);
-    		else if(args[i].equals("-NB"))
-    			numBlocks = new Integer(args[i+1]);
+            else if (args[i].equals("-NB"))
+                numBlocks = new Integer(args[i + 1]);
+            else if (args[i].equals("-partition"))
+                partitionData = new Integer(args[i + 1]);
 //            else
 //				if(args[i].equals("-o"))
 //				orderingName = args[i+1];
@@ -81,23 +84,22 @@ public class OrderingOptimizer {
         orderingName = "iterativeOrdering";
 
 
-        IOrdering ordering = null;
+        IOrderingPP ordering = null;
         System.out.println(version);
-        switch(version)
-        {
+        switch (version) {
 
             case "9-normalized": // good version
                 IterativeOrdering9_WithCounterNormalized ordering9_withCounterNormalized = new IterativeOrdering9_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
                 ordering9_withCounterNormalized.initFrequency();
                 ordering9_withCounterNormalized.exportOrderingForCpp();
                 ordering9_withCounterNormalized.exportBinningForCpp();
-                ordering = ordering9_withCounterNormalized;
+//                ordering = ordering9_withCounterNormalized;
                 break;
             case "9-normalized-signature": //
                 IterativeOrdering9_WithCounterNormalized_AndSignature ordering9_withCounterNormalized_andSignature = new IterativeOrdering9_WithCounterNormalized_AndSignature(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
                 ordering9_withCounterNormalized_andSignature.initFrequency();
-                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
-                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
+//                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
+//                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
                 ordering = ordering9_withCounterNormalized_andSignature;
                 System.out.println("lolz asdasd");
                 break;
@@ -106,109 +108,67 @@ public class OrderingOptimizer {
                 ordering10.initFrequency();
                 ordering10.exportOrderingForCpp();
                 ordering10.exportBinningForCpp();
-                ordering = ordering10;
+//                ordering = ordering10;
                 break;
             case "universal-frequency-signature":
-                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile,readLen, bufferSize, true, k, statSamples);;
+                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, k, statSamples);
+                ;
                 universalFrequencySignature.initRank();
                 universalFrequencySignature.exportOrderingForCpp();
                 universalFrequencySignature.exportBinningForCpp();
-                ordering = universalFrequencySignature;
+//                ordering = universalFrequencySignature;
                 break;
             case "universal-frequency":
-                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile,readLen, bufferSize, false, k, statSamples);;
+                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, k, statSamples);
+                ;
                 universalFrequency.initRank();
                 universalFrequency.exportOrderingForCpp();
                 universalFrequency.exportBinningForCpp();
-                ordering = universalFrequency;
+//                ordering = universalFrequency;
                 break;
             case "frequency": //   FREQUENCY SUCKS
-                FrequencyOrdering frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds*samplesPerRound, statSamples, k);
+                FrequencyOrdering frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound, statSamples, k);
                 frequencyOrdering.initFrequency();
-                ordering = frequencyOrdering;
+//                ordering = frequencyOrdering;
                 break;
             case "signature":
                 LexicographicSignatureOrdering signatureOrdering = new LexicographicSignatureOrdering(pivot_len);
-                ordering = signatureOrdering;
+//                ordering = signatureOrdering;
                 break;
         }
 
-        try {
-
-            System.out.println("Program Configuration:");
-            System.out.print("Input File: " + infile + "\n" +
-                    "Kmer Length: " + k + "\n" +
-                    "Read Length: " + readLen + "\n" +
-                    "Pivot Length: " + pivot_len + "\n" +
-                    "# Of Threads: " + numThreads + "\n" +
-                    "R/W Buffer Size: " + bufferSize + "\n" +
-                    "Ordering: " + orderingName + "\n");
-
-            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
-            Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
-
-
-            partition.Run();
-
-            AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-            OrderingOptimizer.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
-            System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
-
-            HashMap<Long, Long> bytesPerFile = OrderingOptimizer.getBytesPerFile();
-            OrderingOptimizer.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
-
-        } catch (Exception E) {
-            System.out.println("Exception caught!");
-            E.printStackTrace();
-        }
-
-
-    }
-
-    public static HashMap<Long, Long> getBytesPerFile() {
-        File folder = new File("./Nodes");
-        File[] listOfFiles = folder.listFiles();
-
-        HashMap<Long, Long> bytesPerFile = new HashMap<>();
-
-        for (int i = 0; i < listOfFiles.length; i++) {
-            if (listOfFiles[i].isFile())
-                bytesPerFile.put(Long.parseLong(listOfFiles[i].getName().replace("nodes", "")), listOfFiles[i].length());
-        }
-        return bytesPerFile;
-    }
-
-    public static void writeToFile(AbstractMap<Long, Long> data, String fileName) {
-        File file = new File(fileName);
-
-        BufferedWriter bf = null;
-
-
-        try {
-            bf = new BufferedWriter(new FileWriter(file));
-
-            bf.write("x = {");
-            bf.newLine();
-
-            //iterate map entries
-            for (java.util.Map.Entry<Long, Long> entry : data.entrySet()) {
-                bf.write(entry.getKey() + ":" + entry.getValue() + ",");
-                bf.newLine();
-            }
-            bf.write("}");
-            bf.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
+        if (partitionData == 1) {
             try {
-                //always close the writer
-                bf.close();
-            } catch (Exception e) {
+                ExportUtils exportUtils = new ExportUtils();
+                System.out.println("Program Configuration:");
+                System.out.print("Input File: " + infile + "\n" +
+                        "Kmer Length: " + k + "\n" +
+                        "Read Length: " + readLen + "\n" +
+                        "Pivot Length: " + pivot_len + "\n" +
+                        "# Of Threads: " + numThreads + "\n" +
+                        "R/W Buffer Size: " + bufferSize + "\n" +
+                        "Ordering: " + orderingName + "\n");
+
+                Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
+                Map map = new Map(k, (int) Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
+
+
+                partition.Run();
+
+                AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
+                exportUtils.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+                System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
+
+                HashMap<Long, Long> bytesPerFile = exportUtils.getBytesPerFile();
+                exportUtils.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+
+            } catch (Exception E) {
+                System.out.println("Exception caught!");
+                E.printStackTrace();
             }
         }
-
     }
+
+
 
 }
