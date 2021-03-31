@@ -1,14 +1,12 @@
-package buildgraph.Ordering;
+package dumbo.Ordering;
 
-import buildgraph.StringUtils;
+import dumbo.StringUtils;
 
 import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 
-public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IOrderingPP {
+public class IterativeOrdering8 implements IOrdering {
     private String inputFile;
     private int readLen;
     private int bufSize;
@@ -16,8 +14,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
     private int k;
     private long[] currentOrdering;
     private StringUtils stringUtils;
-    private SignatureUtils signatureUtils;
-    private HashMap<Integer, HashSet<String>> frequency;
+    private long[] frequency;
 
     private int statisticsSamples;
     private int roundSamples;
@@ -28,9 +25,8 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
 
     private Integer[] temp = null;
     private int mask;
-    private long[] statFrequency;
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
+    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, long[] initialOrdering) {
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
@@ -38,10 +34,9 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         this.k = k;
         this.currentOrdering = initialOrdering.clone();
         stringUtils = new StringUtils();
-        signatureUtils = new SignatureUtils(pivotLength);
     }
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(int pivotLength, String infile, int readLen, int bufSize, int k) {
+    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k) {
         this(pivotLength, infile, readLen, bufSize, k, new long[(int) Math.pow(4, pivotLength)]);
         for (int i = 0; i < (int) Math.pow(4, pivotLength); i++) {
             int canonical = Math.min(i, getReversed(i));
@@ -53,37 +48,18 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         elementsToPush = 1;
     }
 
-    public IterativeOrdering9_WithCounterNormalized_AndSignature(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double percentagePunishment) {
+    public IterativeOrdering8(int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds, int elementsToPush, int statisticsSamples, double percentagePunishment) {
         this(pivotLength, infile, readLen, bufSize, k);
         this.roundSamples = roundSamples;
         this.rounds = rounds;
         this.elementsToPush = elementsToPush;
         this.statisticsSamples = statisticsSamples;
         this.percentagePunishment = percentagePunishment;
-        this.mask = (int) Math.pow(4, pivotLength) - 1;
-    }
-
-    public String getCanon(String line) {
-        String x = new String(stringUtils.getReversedRead(line.toCharArray()));
-        for (int i = 0; i < line.length(); i++) {
-            if (line.charAt(i) < x.charAt(i))
-                return line;
-            else if (line.charAt(i) > x.charAt(i))
-                return x;
-        }
-        return x;
+        this.mask = (int)Math.pow(4, pivotLength) - 1;
     }
 
 
     public void initFrequency() throws IOException {
-        int numMmers = (int)Math.pow(4, pivotLength);
-        for (int i = 0; i < numMmers; i++) {
-            if(!signatureUtils.isAllowed(i) && i < getReversed(i))
-            {
-                currentOrdering[i] += numMmers;
-                currentOrdering[getReversed(i)] += numMmers;
-            }
-        }
 
         boolean keepSample = true;
         int numSampled = 0;
@@ -92,8 +68,7 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         FileReader frG = new FileReader(inputFile);
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
-        statFrequency = new long[(int) Math.pow(4, pivotLength)];
-        HashMap<Integer, HashSet<String>> pmerFrequency = new HashMap<>((int) Math.pow(4, pivotLength));
+        long[] pmerFrequency = new long[(int) Math.pow(4, pivotLength)];
 
         String describeline;
         char[] lineCharArray = new char[readLen];
@@ -102,26 +77,20 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
 
 
         int min_pos = -1;
-        int minValue, currentValue, minValueNormalized;
+        int minValue, currentValue;
 
         while (keepSample && (describeline = bfrG.readLine()) != null) {
 
             bfrG.read(lineCharArray, 0, readLen);
             bfrG.read();
-            String line = new String(lineCharArray);
 
             if (stringUtils.isReadLegal(lineCharArray)) {
 
                 min_pos = findSmallest(lineCharArray, 0, k);
                 minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-                minValueNormalized = Math.min(minValue, getReversed(minValue));
                 currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
                 ;
-                if (!pmerFrequency.containsKey(minValueNormalized))
-                    pmerFrequency.put(minValueNormalized, new HashSet<>());
-                pmerFrequency.get(minValueNormalized).add(getCanon(line.substring(0, k))); // += 1;
-
-                if (roundNumber == rounds) statFrequency[minValueNormalized]++;
+                pmerFrequency[minValue] += 1;
 
                 int bound = len - k + 1;
                 for (int i = 1; i < bound; i++) {
@@ -131,37 +100,30 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
                         minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-                        minValueNormalized = Math.min(minValue, getReversed(minValue));
-
-                        if (!pmerFrequency.containsKey(minValueNormalized))
-                            pmerFrequency.put(minValueNormalized, new HashSet<>());
-                        pmerFrequency.get(minValueNormalized).add(getCanon(line.substring(i, k + i))); // += 1;
-                        if (roundNumber == rounds) statFrequency[minValueNormalized]++;
+                        pmerFrequency[minValue] += 1;
                     } else {
                         int lastIndexInWindow = k + i - pivotLength;
                         if (strcmp(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
-                            minValueNormalized = Math.min(minValue, getReversed(minValue));
-
-                            if (!pmerFrequency.containsKey(minValueNormalized))
-                                pmerFrequency.put(minValueNormalized, new HashSet<>());
-                            pmerFrequency.get(minValueNormalized).add(getCanon(line.substring(i, k + i))); // += 1;
-                            if (roundNumber == rounds) statFrequency[minValueNormalized]++;
+                            pmerFrequency[minValue] += 1;
                         }
                     }
 
-                    pmerFrequency.get(minValueNormalized).add(getCanon(line.substring(i, k + i))); // += 1;
-                    if (roundNumber == rounds) statFrequency[minValueNormalized]++;
+                    pmerFrequency[minValue]++;
                 }
             }
 
             if (numSampled >= roundSamples) {
                 roundNumber++;
-                if (roundNumber <= rounds) {  // TODO: SHOULD THIS BE < and not <=
+                if (roundNumber <= rounds) {
                     numSampled = 0;
                     adaptOrdering(pmerFrequency);
-                    pmerFrequency.clear();
+                    if(roundNumber % 100 == 0) {
+                        percentagePunishment *= 0.996;
+                        normalize();
+                    }
+                    pmerFrequency = new long[(int) Math.pow(4, pivotLength)]; // zero out elements
                     if (roundNumber == rounds) {
                         System.out.println("Sampling for binning round");
                         roundSamples = statisticsSamples;
@@ -173,31 +135,27 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
             frequency = pmerFrequency;
 
         }
-        normalize();
         bfrG.close();
         frG.close();
     }
 
 
-    private void adaptOrdering(HashMap<Integer, HashSet<String>> pmerFrequency) {
-        int[] frequencies = new int[(int) Math.pow(4, pivotLength)];
-        for (Integer i : pmerFrequency.keySet()) {
-            frequencies[i] = pmerFrequency.get(i).size();
-        }
+    private void adaptOrdering(long[] pmerFrequency) {
+// TODO : if biggest is smaller than (samples / 4^(m-1))/5
         for (int i = 0; i < elementsToPush; i++) {
             long biggest = -1;
             int biggestIndex = -1;
-            for (int k = 0; k < frequencies.length; k++) {
-                if (frequencies[k] > biggest) {
-                    biggest = frequencies[k];
+            for (int k = 0; k < pmerFrequency.length; k++) {
+                if (pmerFrequency[k] > biggest) {
+                    biggest = pmerFrequency[k];
                     biggestIndex = k;
                 }
             }
             long newRank = currentOrdering[biggestIndex] + (int) ((int) Math.pow(4, pivotLength) * percentagePunishment);
             currentOrdering[biggestIndex] = newRank;
             currentOrdering[getReversed(biggestIndex)] = newRank;
-            frequencies[biggestIndex] = 0;
-            frequencies[getReversed(biggestIndex)] = 0;
+            pmerFrequency[biggestIndex] = 0;
+            pmerFrequency[getReversed(biggestIndex)] = 0;
         }
     }
 
@@ -229,12 +187,12 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         int x = stringUtils.getDecimal(a, froma, froma + pivotLength);
         int y = stringUtils.getDecimal(b, fromb, fromb + pivotLength);
 
-        return strcmp(x,y);
+        if (x == y) return 0;
+        if (currentOrdering[x] < currentOrdering[y]) return -1;
+        return 1;
     }
 
-    @Override
     public int strcmp(int x, int y) {
-//        if (x == y || y == getReversed(x)) return 0;
         if (x == y) return 0;
         if (currentOrdering[x] < currentOrdering[y]) return -1;
         return 1;
@@ -242,13 +200,14 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
 
     private void normalize() {
 //        currentOrdering
-        if (temp == null) {
+        if(temp == null)
+        {
             temp = new Integer[currentOrdering.length];
             for (int i = 0; i < temp.length; temp[i] = i, i++) ;
         }
-        Arrays.sort(temp, Comparator.comparingLong(a ->  currentOrdering[a]));
-        for (int i = 0; i < temp.length; i++) {
-            currentOrdering[temp[i]] = i; // TODO: FIXED THIS
+        Arrays.sort(temp, Comparator.comparingLong(a -> currentOrdering[a]));
+        for(int i = 0 ; i<temp.length; i++){
+            currentOrdering[i] = temp[i];
         }
     }
 
@@ -287,8 +246,8 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
         try {
             bf = new BufferedWriter(new FileWriter(file));
 
-            for (int i = 0; i < statFrequency.length; i++) {
-                bf.write(Long.toString(statFrequency[i]));
+            for (int i = 0; i < frequency.length; i++) {
+                bf.write(Long.toString(frequency[i]));
                 bf.newLine();
             }
             bf.flush();
@@ -303,10 +262,5 @@ public class IterativeOrdering9_WithCounterNormalized_AndSignature implements IO
             } catch (Exception e) {
             }
         }
-    }
-
-    @Override
-    public long getRank(int mmer) {
-        return currentOrdering[mmer];
     }
 }

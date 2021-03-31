@@ -1,4 +1,4 @@
-package buildgraph.Ordering;
+package dumbo.Ordering;
 
 public class LexicographicOrdering implements IOrdering {
 

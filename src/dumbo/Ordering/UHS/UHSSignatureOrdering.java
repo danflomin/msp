@@ -1,7 +1,7 @@
-package buildgraph.Ordering.UHS;
+package dumbo.Ordering.UHS;
 
-import buildgraph.Ordering.SignatureUtils;
-import buildgraph.StringUtils;
+import dumbo.Ordering.SignatureUtils;
+import dumbo.StringUtils;
 
 import java.io.IOException;
 

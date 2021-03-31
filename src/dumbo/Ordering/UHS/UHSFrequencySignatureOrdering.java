@@ -1,42 +1,71 @@
-package buildgraph.Ordering;
+package dumbo.Ordering.UHS;
 
-import buildgraph.Ordering.UHS.UHSSignatureOrdering;
-import buildgraph.StringUtils;
+import dumbo.StringUtils;
 
 import java.io.*;
-import java.net.Inet4Address;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 
-public class FrequencyOrdering implements IOrdering {
-    private int pivotLength;
+public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
     private String inputFile;
     private int readLen;
     private int bufSize;
     private long[] pmerFrequency;
-    private long[] statsFrequency;
-    private int numSamples;
-    private int numStats;
     private int k;
-    private StringUtils stringUtils;
+    private int numStats;
+    private boolean isInit;
+
+    private long[] statsFrequency;
     private int mask;
 
-    public FrequencyOrdering(int pivotLen, String infile, int readLen, int bufSize, int numSamples, int numStats, int k) {
-        pivotLength = pivotLen;
+    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, int k, int numStats) throws IOException {
+        super(0, pivotLen, useSignature);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
         pmerFrequency = new long[(int)Math.pow(4, pivotLen)];
-        this.numSamples = numSamples;
-        this.numStats = numStats;
         this.k = k;
-        stringUtils = new StringUtils();
+        this.numStats = numStats;
+        isInit = false;
         mask = (int)Math.pow(4, pivotLen) - 1;
     }
 
-    public void initFrequency() throws IOException {
+    @Override
+    public void initRank() throws IOException {
+        initFrequency();
+        super.initRank();
+        isRankInit = true;
+    }
+
+    protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
+        int baseCompareValue = strcmpBase(x, y);
+        if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
+            return baseCompareValue;
+        }
+
+        // from down here - both in UHS
+
+        if(useSignature){
+            if (!xAllowed && yAllowed) {
+                return 1;
+            } else if (!yAllowed && xAllowed) {
+                return -1;
+            }
+        }
+
+        // both allowed or both not allowed
+        if(pmerFrequency[x] == pmerFrequency[y]){
+            if(x<y)
+                return -1;
+            else
+                return 1;
+        }
+        else if(pmerFrequency[x] < pmerFrequency[y])
+            return -1;
+        else
+            return 1;
+
+    }
+
+    private void initFrequency() throws IOException {
         FileReader frG = new FileReader(inputFile);
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
@@ -54,25 +83,22 @@ public class FrequencyOrdering implements IOrdering {
 
             if (stringUtils.isReadLegal(lineCharArray)) {
                 char[] revCharArray = stringUtils.getReversedRead(lineCharArray);
-                for (int i = 0; i < lineCharArray.length-pivotLength; i++) {
+                for (int i = 0; i < lineCharArray.length-pivotLen; i++) {
 
-                    int lineValue = stringUtils.getDecimal(lineCharArray, i, i+pivotLength);
+                    int lineValue = stringUtils.getDecimal(lineCharArray, i, i+pivotLen);
                     pmerFrequency[lineValue] += 1;
 
-                    int revValue = stringUtils.getDecimal(revCharArray, i, i+pivotLength);
+                    int revValue = stringUtils.getDecimal(revCharArray, i, i+pivotLen);
                     pmerFrequency[revValue] += 1;
 
                     counter++;
                 }
-                if(counter > numSamples){
+                if(counter > 1000000){
                     break;
                 }
             }
         }
-
-        normalize();
         initStats(bfrG);
-
         bfrG.close();
         frG.close();
     }
@@ -82,7 +108,7 @@ public class FrequencyOrdering implements IOrdering {
         int numSampled = 0;
         boolean keepSample = true;
 
-        statsFrequency = new long[(int) Math.pow(4, pivotLength)];
+        statsFrequency = new long[(int) Math.pow(4, pivotLen)];
 
         String describeline;
         char[] lineCharArray = new char[readLen];
@@ -102,8 +128,8 @@ public class FrequencyOrdering implements IOrdering {
             if (stringUtils.isReadLegal(lineCharArray)) {
 
                 min_pos = findSmallest(lineCharArray, 0, k);
-                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
+                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
+                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLen, k);
 
                 statsFrequency[minValue]++;
 
@@ -114,12 +140,12 @@ public class FrequencyOrdering implements IOrdering {
 
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
-                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
+                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
 
 
                         statsFrequency[minValue]++;
                     } else {
-                        int lastIndexInWindow = k + i - pivotLength;
+                        int lastIndexInWindow = k + i - pivotLen;
                         if (strcmp(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
@@ -134,73 +160,11 @@ public class FrequencyOrdering implements IOrdering {
         }
     }
 
-    public long[] getRawOrdering()
-    {
-        return pmerFrequency.clone();
-    }
-
-
-    private void normalize() {
-        Integer[] temp = new Integer[pmerFrequency.length];
-        for (int i = 0; i < temp.length; temp[i] = i, i++) ;
-
-        Arrays.sort(temp, this::strcmp);
-        for(int i = 0 ; i<temp.length; i++){
-            pmerFrequency[i] = temp[i];
-        }
-
-        for(int i = 0 ; i<temp.length; i++){
-            int rev = getReversed(i);
-            long min = Math.max(pmerFrequency[i], pmerFrequency[rev]);
-            pmerFrequency[i] = min;
-            pmerFrequency[rev] = min;
-        }
-
-    }
-
-    private int getReversed(int x) {
-        int rev = 0;
-        int immer = ~x;
-        for (int i = 0; i < pivotLength; ++i) {
-            rev <<= 2;
-            rev |= immer & 0x3;
-            immer >>= 2;
-        }
-        return rev;
-    }
-
-
-    @Override
-    public int findSmallest(char[] a, int from, int to) throws IOException {
-        int min_pos = from;
-        for (int i = from + 1; i <= to - pivotLength; i++) {
-            if (strcmp(a, a, min_pos, i, pivotLength) > 0)
-                min_pos = i;
-        }
-        return min_pos;
-    }
-
-    @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
-        int x = stringUtils.getDecimal(a, froma, froma + pivotLength);
-        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLength);
-
-        return strcmp(x,y);
-    }
-
-    public int strcmp(int x, int y)
-    {
-        if (x == y) return 0;
-        if (pmerFrequency[x] == pmerFrequency[y]) {
-            if(x<y)
-                return -1;
-            return 1;
-        }
-        if(pmerFrequency[x] < pmerFrequency[y])
-            return -1;
-        return 1;
-    }
-
+//    public int[] getNormalizedForm()
+//    {
+//        int[] ret = rankOfPmer.clone();
+//        return ret;
+//    }
 
     public void exportOrderingForCpp() {
         File file = new File("ranks.txt");
@@ -210,8 +174,8 @@ public class FrequencyOrdering implements IOrdering {
         try {
             bf = new BufferedWriter(new FileWriter(file));
 
-            for (int i = 0; i < pmerFrequency.length; i++) {
-                bf.write(Long.toString(pmerFrequency[i]));
+            for (int i = 0; i < rankOfPmer.length; i++) {
+                bf.write(Long.toString(rankOfPmer[i]));
                 bf.newLine();
             }
             bf.flush();
@@ -253,4 +217,8 @@ public class FrequencyOrdering implements IOrdering {
             }
         }
     }
+
+
+
+
 }

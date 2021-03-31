@@ -1,8 +1,6 @@
-package buildgraph;
+package dumbo;
 
-import buildgraph.Ordering.IOrdering;
-import buildgraph.Ordering.IOrderingPP;
-import buildgraph.Ordering.UHS.YaelUHSOrdering;
+import dumbo.Ordering.IOrderingPP;
 
 import java.io.*;
 import java.util.HashSet;
@@ -25,9 +23,6 @@ public class Partition {
 
     private StringUtils stringUtils;
 
-    private int numOpenFiles;
-    private int minFile;
-    private int maxFile;
 
     private HashSet<Integer> currentMinimizers;
     private byte[] finishedMinimizers;
@@ -46,12 +41,11 @@ public class Partition {
         this.readLen = readLen;
         this.ordering = ordering;
         this.stringUtils = new StringUtils();
-        this.numOpenFiles = 0;
         this.mask = (int) Math.pow(4, pivotLength) - 1;
-        finishedMinimizers = new byte[numOfBlocks];
-        currentMinimizers = new HashSet<>();
-        maxMinimizersPerPass = 10000;
-        keepPassing = true;
+        this.finishedMinimizers = new byte[numOfBlocks];
+        this.currentMinimizers = new HashSet<>();
+        this.maxMinimizersPerPass = 1000;
+        this.keepPassing = true;
     }
 
 
@@ -95,10 +89,10 @@ public class Partition {
 
                 int bound = len - k + 1;
                 for (int i = 1; i < bound; i++) {
-                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;//0xffff;
+                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;
 
                     if (i > minPos) {
-                        writeToFile(minValueNormalized, start, minPos + k, lineCharArray, 0);
+                        writeToFile(minValueNormalized, start, minPos + k, lineCharArray);
 
                         minPos = ordering.findSmallest(lineCharArray, i, i + k);
                         start = i;
@@ -109,7 +103,7 @@ public class Partition {
                     } else {
                         int lastIndexInWindow = k + i - pivotLen;
                         if (ordering.strcmp(currentValue, minValue) < 0) {
-                            writeToFile(minValueNormalized, start, lastIndexInWindow + pivotLen - 1, lineCharArray, 0);
+                            writeToFile(minValueNormalized, start, lastIndexInWindow + pivotLen - 1, lineCharArray);
 
                             start = lastIndexInWindow + pivotLen - k;
                             minPos = lastIndexInWindow;
@@ -118,7 +112,7 @@ public class Partition {
                         }
                     }
                 }
-                writeToFile(minValueNormalized, start, len, lineCharArray, 0);
+                writeToFile(minValueNormalized, start, len, lineCharArray);
             }
         }
 
@@ -148,26 +142,13 @@ public class Partition {
     }
 
     private void tryCreateWriterForPmer(int prepos) throws IOException {
-        if (numOpenFiles == 16000) {
-            for (int i = 0; i < bfwG.length; i++) {
-                if (bfwG[i] != null) {
-                    bfwG[i].close();
-                    fwG[i].close();
-                    bfwG[i] = null;
-                    fwG[i] = null;
-                }
-            }
-            numOpenFiles = 0;
-        }
-
         if (bfwG[prepos] == null) {
             fwG[prepos] = new FileWriter("Nodes/nodes" + prepos, true);
             bfwG[prepos] = new BufferedWriter(fwG[prepos], bufSize);
-            numOpenFiles += 1;
         }
     }
 
-    private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray, long outcnt) throws IOException {
+    private void writeToFile(int prepos, int substart, int subend, char[] lineCharArray) throws IOException {
         if(finishedMinimizers[prepos] == 0 && currentMinimizers.size() < maxMinimizersPerPass)
         {
             currentMinimizers.add(prepos);
@@ -179,7 +160,6 @@ public class Partition {
             BufferedWriter writer = bfwG[prepos];
 
             writer.write(lineCharArray, substart, subend - substart);
-            writer.write("\t" + outcnt);
             writer.newLine();
         }
     }

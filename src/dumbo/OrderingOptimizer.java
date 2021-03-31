@@ -1,7 +1,7 @@
-package buildgraph;
+package dumbo;
 
-import buildgraph.Ordering.*;
-import buildgraph.Ordering.UHS.UHSFrequencySignatureOrdering;
+import dumbo.Ordering.*;
+import dumbo.Ordering.UHS.UHSFrequencySignatureOrdering;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.util.AbstractMap;
 import java.util.HashMap;
 
-public class BuildDeBruijnGraph {
+public class OrderingOptimizer {
 
     public static void main(String[] args) throws IOException {
 
@@ -79,28 +79,7 @@ public class BuildDeBruijnGraph {
 
 
         orderingName = "iterativeOrdering";
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k); /// this is the first version 100000, 10000, 1
-//        ordering.initFrequency();
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 30000, 1, 10);
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, 10);
-//        IterativeOrdering ordering = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k, 25000, 100000, 1, (int)Math.pow(4,pivot_len)/100);
 
-//        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k);
-
-//        IterativeOrdering2 ordering = new IterativeOrdering2(pivot_len, infile, readLen, bufferSize, k, 100000, 10000, 5, (int)Math.pow(4,pivot_len)/100);
-
-//        ordering.initFrequency();
-
-//        UHSFrequencySignatureOrdering ordering = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true);
-//        ordering.initRank();
-
-//        IterativeOrdering3 ordering = new IterativeOrdering3(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples);
-//        IterativeOrdering4 ordering = new IterativeOrdering4(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
-//        IterativeOrdering6 ordering = new IterativeOrdering6(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
-//        IterativeUHSOrdering8 ordering = new IterativeUHSOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds,elementsToPush, statSamples, maskRatio, punishPercentage);
-//        IterativeOrdering8 ordering = new IterativeOrdering8(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-
-//        GOOD
 
         IOrdering ordering = null;
         System.out.println(version);
@@ -171,20 +150,18 @@ public class BuildDeBruijnGraph {
                     "R/W Buffer Size: " + bufferSize + "\n" +
                     "Ordering: " + orderingName + "\n");
 
-//            Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, ordering);
             Partition partition = new Partition(k, infile, numBlocks, pivot_len, bufferSize, readLen, (IOrderingPP) ordering);
             Map map = new Map(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
-//            MapTrunc map = new MapTrunc(k, (int)Math.pow(4, pivot_len), bufferSize, hsmapCapacity);
 
 
             partition.Run();
 
             AbstractMap<Long, Long> distinctKmersPerPartition = map.Run(numThreads);
-            BuildDeBruijnGraph.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
+            OrderingOptimizer.writeToFile(distinctKmersPerPartition, orderingName + pivot_len + "_" + "kmers");
             System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + distinctKmersPerPartition.values().stream().mapToLong(Long::longValue).sum());
 
-            HashMap<Long, Long> bytesPerFile = BuildDeBruijnGraph.getBytesPerFile();
-            BuildDeBruijnGraph.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
+            HashMap<Long, Long> bytesPerFile = OrderingOptimizer.getBytesPerFile();
+            OrderingOptimizer.writeToFile(bytesPerFile, orderingName + pivot_len + "_" + "bytes");
 
         } catch (Exception E) {
             System.out.println("Exception caught!");
@@ -211,7 +188,7 @@ public class BuildDeBruijnGraph {
         File file = new File(fileName);
 
         BufferedWriter bf = null;
-        ;
+
 
         try {
             bf = new BufferedWriter(new FileWriter(file));

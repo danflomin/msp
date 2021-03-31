@@ -1,7 +1,7 @@
-package buildgraph.Ordering.UHS;
+package dumbo.Ordering.UHS;
 
-import buildgraph.Ordering.IOrdering;
-import buildgraph.StringUtils;
+import dumbo.Ordering.IOrdering;
+import dumbo.StringUtils;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

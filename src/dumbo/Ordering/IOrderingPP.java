@@ -1,6 +1,4 @@
-package buildgraph.Ordering;
-
-import java.io.IOException;
+package dumbo.Ordering;
 
 public interface IOrderingPP extends IOrdering {
     long getRank(int mmer);
