@@ -6,8 +6,7 @@ import java.io.*;
 import java.util.Arrays;
 import java.util.Comparator;
 
-public class FrequencyOrdering implements IOrderingPP {
-    private int pivotLength;
+public class FrequencyOrdering extends OrderingBase {
     private String inputFile;
     private int readLen;
     private int bufSize;
@@ -17,11 +16,9 @@ public class FrequencyOrdering implements IOrderingPP {
     private int numSamples;
     private int numStats;
     private int k;
-    private StringUtils stringUtils;
-    private int mask;
 
     public FrequencyOrdering(int pivotLen, String infile, int readLen, int bufSize, int numSamples, int numStats, int k) {
-        pivotLength = pivotLen;
+        super(pivotLen);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
@@ -30,8 +27,6 @@ public class FrequencyOrdering implements IOrderingPP {
         this.numSamples = numSamples;
         this.numStats = numStats;
         this.k = k;
-        stringUtils = new StringUtils();
-        mask = (int) Math.pow(4, pivotLen) - 1;
     }
 
     public void initFrequency() throws IOException {
@@ -115,7 +110,7 @@ public class FrequencyOrdering implements IOrderingPP {
                         statsFrequency[minValue]++;
                     } else {
                         int lastIndexInWindow = k + i - pivotLength;
-                        if (strcmp(currentValue, minValue) < 0) {
+                        if (compareMmer(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
 
@@ -142,29 +137,17 @@ public class FrequencyOrdering implements IOrderingPP {
 
     }
 
-
     @Override
-    public int findSmallest(char[] a, int from, int to) throws IOException {
-        int min_pos = from;
-        int minValue = stringUtils.getDecimal(a, min_pos, min_pos + pivotLength);
-        int currentValue = minValue;
-        for (int i = from + 1; i <= to - pivotLength; i++) {
-            currentValue = ((currentValue << 2) + StringUtils.valTable[a[i + pivotLength - 1] - 'A']) & mask;
-            if (strcmp(minValue, currentValue) > 0) {
-                min_pos = i;
-                minValue = currentValue;
-            }
-        }
-        return min_pos;
+    public int[] getRanks() {
+        return currentOrdering.clone();
     }
 
-
-    public int strcmp(int x, int y) {
+    public int compareMmer(int x, int y) {
         int a = stringUtils.getNormalizedValue(x, pivotLength);
         int b = stringUtils.getNormalizedValue(y, pivotLength);
         if (a == b) return 0;
 
-        if (pmerFrequency[x] < pmerFrequency[y])
+        if (pmerFrequency[a] < pmerFrequency[b])
             return -1;
         else
             return 1;

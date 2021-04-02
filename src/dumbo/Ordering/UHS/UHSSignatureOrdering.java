@@ -1,7 +1,6 @@
 package dumbo.Ordering.UHS;
 
-import dumbo.Ordering.SignatureUtils;
-import dumbo.StringUtils;
+import dumbo.Ordering.Standard.SignatureUtils;
 
 import java.io.IOException;
 
@@ -29,86 +28,47 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
     }
 
 
-
     @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
-        if(!isRankInit) throw new IOException("rank not initialized yet");
+    public int compareMmer(int x, int y) {
 
-        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
-        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
+        if (!isRankInit)
+        {
+            System.out.println("problema - rank not initialized");
+            return -1;
+        }
 
-        if (x == y) return 0;
+
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
+
+        if (a == b) return 0;
 
         // isRankInit = true here
-        if (rankOfPmer[x] < rankOfPmer[y]) {
+        if (rankOfPmer[a] < rankOfPmer[b]) {
             return -1;
         }
         return 1;
     }
 
-    public int strcmp(int x, int y) throws IOException {
-        if(!isRankInit) throw new IOException("rank not initialized yet");
 
-        if (x == y) return 0;
+    protected int rawCompare(int x, int y) {
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
 
-        // isRankInit = true here
-        if (rankOfPmer[x] < rankOfPmer[y]) {
-            return -1;
-        }
-        return 1;
-    }
-
-    @Override
-    public int findSmallest(char[] a, int from, int to) throws IOException {
-        int min_pos = from;
-        int j = stringUtils.getDecimal(a, min_pos, min_pos + pivotLen);
-        int prev = j;
-        int hexRepresentation = pivotLengthToHexRepresentation.get(pivotLen);
-        for (int i = from + 1; i <= to - pivotLen; i++) {
-            j = ((j * 4) ^ (StringUtils.valTable[a[i + pivotLen - 1] - 'A'])) & hexRepresentation;
-
-            if (isInUHS(j)) {
-                if(rankOfPmer[j] < rankOfPmer[prev]){
-                    min_pos = i;
-                    prev = j;
-                }
-
-            }
-        }
-        return min_pos;
-    }
-
-    protected int calculateStrcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
-        int x = stringUtils.getDecimal(a, froma, froma + pivotLen);
-        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLen);
-
-        if (x == y) return 0;
+        if (a == b) return 0;
 
         boolean aAllowed = true, bAllowed = true;
         if (useSignature) {
-            aAllowed = signatureUtils.isAllowed(a, froma, x);
-            bAllowed = signatureUtils.isAllowed(b, fromb, y);
+            aAllowed = signatureUtils.isAllowed(a);
+            bAllowed = signatureUtils.isAllowed(b);
         }
 
-        return strcmpSignature(x, y, aAllowed, bAllowed);
-    }
-
-    protected int calculateStrcmp(int x, int y) throws IOException {
-        if (x == y) return 0;
-
-        boolean aAllowed = true, bAllowed = true;
-        if (useSignature) {
-            aAllowed = signatureUtils.isAllowed(x);
-            bAllowed = signatureUtils.isAllowed(y);
-        }
-
-        return strcmpSignature(x, y, aAllowed, bAllowed);
+        return rawCompare(a, b, aAllowed, bAllowed);
     }
 
 
-
-    protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
-        int baseCompareValue = strcmpBase(x, y);
+    protected int rawCompare(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
+        int baseCompareValue = compareMmerBase(xNormalized, yNormalized);
         if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
             return baseCompareValue;
         }
@@ -121,7 +81,7 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
             }
         }
         // both allowed or both not allowed
-        if ((x ^ xor) < (y ^ xor))
+        if ((xNormalized ^ xor) < (yNormalized ^ xor))
             return -1;
         else
             return 1;

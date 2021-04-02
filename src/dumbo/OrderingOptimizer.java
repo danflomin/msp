@@ -1,6 +1,8 @@
 package dumbo;
 
 import dumbo.Ordering.*;
+import dumbo.Ordering.Standard.LexicographicOrdering;
+import dumbo.Ordering.Standard.LexicographicSignatureOrdering;
 import dumbo.Ordering.UHS.UHSFrequencySignatureOrdering;
 
 import java.io.IOException;
@@ -14,7 +16,7 @@ public class OrderingOptimizer {
 
         int k = 60, pivot_len = 8, bufferSize = 81920;
         int readLen = 124;
-        String orderingName = "uhs_sig_freq";
+        String orderingName = "iterativeOrdering";
         int numRounds = 0, elementsToPush = 0, samplesPerRound = 0, statSamples = 0;
         double punishPercentage = 1;
         String version = "10";
@@ -73,10 +75,8 @@ public class OrderingOptimizer {
                 "Ordering: " + orderingName + "\n");
 
 
-        orderingName = "iterativeOrdering";
 
-
-        IOrderingPP ordering = null;
+        OrderingBase ordering = null;
         System.out.println(version);
         switch (version) {
 
@@ -88,7 +88,18 @@ public class OrderingOptimizer {
 //                ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = iterative;
                 break;
-            case "9-normalized-signature": //
+            case "9-frequency":
+                FrequencyOrdering _frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound, statSamples, k);
+                _frequencyOrdering.initFrequency();
+
+                IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false, _frequencyOrdering);
+                iterativeFrequency.initFrequency();
+//                ordering9_withCounterNormalized.exportOrderingForCpp();
+//                ordering9_withCounterNormalized.exportBinningForCpp();
+                ordering = iterativeFrequency;
+                break;
+            case "9-normalized-signature":
                 IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, true);
                 iterativeSignature.initFrequency();
@@ -108,17 +119,17 @@ public class OrderingOptimizer {
                 UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, k, statSamples);
                 ;
                 universalFrequencySignature.initRank();
-                universalFrequencySignature.exportOrderingForCpp();
-                universalFrequencySignature.exportBinningForCpp();
-//                ordering = universalFrequencySignature;
+//                universalFrequencySignature.exportOrderingForCpp();
+//                universalFrequencySignature.exportBinningForCpp();
+                ordering = universalFrequencySignature;
                 break;
             case "universal-frequency":
                 UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, k, statSamples);
                 ;
                 universalFrequency.initRank();
-                universalFrequency.exportOrderingForCpp();
-                universalFrequency.exportBinningForCpp();
-//                ordering = universalFrequency;
+//                universalFrequency.exportOrderingForCpp();
+//                universalFrequency.exportBinningForCpp();
+                ordering = universalFrequency;
                 break;
             case "frequency": //   FREQUENCY SUCKS
                 FrequencyOrdering frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound, statSamples, k);

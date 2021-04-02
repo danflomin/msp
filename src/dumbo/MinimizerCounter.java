@@ -1,6 +1,6 @@
 package dumbo;
 
-import dumbo.Ordering.IOrderingPP;
+import dumbo.Ordering.OrderingBase;
 
 import java.io.*;
 
@@ -14,14 +14,14 @@ public class MinimizerCounter {
     private FileReader frG;
     private BufferedReader bfrG;
 
-    private IOrderingPP ordering;
+    private OrderingBase ordering;
 
     private StringUtils stringUtils;
 
     private long[] minimizerCounters;
 
 
-    public MinimizerCounter(int kk, String kmerSetFile, int pivotLength, int bufferSize, IOrderingPP ordering) {
+    public MinimizerCounter(int kk, String kmerSetFile, int pivotLength, int bufferSize, OrderingBase ordering) {
         this.k = kk;
         this.kmerSetFile = kmerSetFile;
         this.pivotLen = pivotLength;

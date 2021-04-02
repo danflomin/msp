@@ -1,11 +1,9 @@
-package dumbo.Ordering;
-
-import dumbo.StringUtils;
+package dumbo.Ordering.Standard;
 
 import java.io.IOException;
 
 public class LexicographicSignatureOrdering extends LexicographicOrdering {
-    private SignatureUtils signatureUtils;
+    protected SignatureUtils signatureUtils;
 
     public LexicographicSignatureOrdering(int pivotLen) throws IOException {
         super(pivotLen);
@@ -13,7 +11,7 @@ public class LexicographicSignatureOrdering extends LexicographicOrdering {
     }
 
     @Override
-    public int strcmp(int x, int y) {
+    public int compareMmer(int x, int y) {
         boolean aAllowed = signatureUtils.isAllowed(x);
         boolean bAllowed = signatureUtils.isAllowed(y);
 

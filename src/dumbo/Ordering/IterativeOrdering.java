@@ -1,5 +1,6 @@
 package dumbo.Ordering;
 
+import dumbo.Ordering.Standard.SignatureUtils;
 import dumbo.StringUtils;
 
 import java.io.*;
@@ -8,14 +9,12 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 
-public class IterativeOrdering implements IOrderingPP {
+public class IterativeOrdering extends OrderingBase {
     private String inputFile;
     private int readLen;
     private int bufSize;
-    private int pivotLength;
     private int k;
-    private long[] currentOrdering;
-    private StringUtils stringUtils;
+    private int[] currentOrdering;
     private SignatureUtils signatureUtils;
     private HashMap<Integer, HashSet<String>> frequency;
 
@@ -26,60 +25,76 @@ public class IterativeOrdering implements IOrderingPP {
 
     private double percentagePunishment;
 
-    private int mask;
     private long[] statFrequency;
 
-    private int numMmers;
     private boolean useSignature;
+
+    private boolean initialized;
 
 
     public IterativeOrdering(
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature) {
+        super(pivotLength);
         this.roundSamples = roundSamples;
         this.rounds = rounds;
         this.elementsToPush = elementsToPush;
         this.statisticsSamples = statisticsSamples;
         this.percentagePunishment = percentagePunishment;
-        numMmers = (int) Math.pow(4, pivotLength);
         this.useSignature = useSignature;
-        this.mask = numMmers - 1;
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
-        this.pivotLength = pivotLength;
         this.k = k;
-        stringUtils = new StringUtils();
         signatureUtils = new SignatureUtils(pivotLength);
-        currentOrdering = new long[(int) Math.pow(4, pivotLength)];
+        currentOrdering = new int[(int) Math.pow(4, pivotLength)];
+        initialized = false;
     }
 
     public IterativeOrdering(
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
-            int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, long[] initialOrdering) {
+            int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, int[] initialOrdering) {
         this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
         currentOrdering = initialOrdering.clone();
+        initialized = true;
+        badArgumentsThrow();
+    }
+
+    public IterativeOrdering(
+            int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
+            int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, OrderingBase initialOrdering) throws IOException {
+        this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
+        currentOrdering = initialOrdering.getRanks().clone();
+        initialized = true;
+        badArgumentsThrow();
+    }
+
+    private void badArgumentsThrow() {
         if (currentOrdering.length != numMmers)
             throw new IllegalArgumentException("initialOrdering is not of correct size");
+        if (useSignature)
+            throw new IllegalArgumentException("Can't initialize ordering from outside with useSignature as true");
     }
 
 
     public void initFrequency() throws IOException {
 
-        for (int i = 0; i < numMmers; i++) {
-            int canonical = Math.min(i, stringUtils.getReversedMmer(i, pivotLength));
-            currentOrdering[i] = canonical;
-            currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
-        }
-
-        if (useSignature) {
+        if (!initialized) {
             for (int i = 0; i < numMmers; i++) {
-                if (!signatureUtils.isAllowed(i) && i < stringUtils.getReversedMmer(i, pivotLength)) {
-                    currentOrdering[i] += numMmers;
-                    currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] += numMmers;
+                int canonical = Math.min(i, stringUtils.getReversedMmer(i, pivotLength));
+                currentOrdering[i] = canonical;
+                currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
+            }
+            if (useSignature) {
+                for (int i = 0; i < numMmers; i++) {
+                    if (!signatureUtils.isAllowed(i) && i < stringUtils.getReversedMmer(i, pivotLength)) {
+                        currentOrdering[i] += numMmers;
+                        currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] += numMmers;
+                    }
                 }
             }
         }
+
 
         boolean keepSample = true;
         int numSampled = 0;
@@ -128,7 +143,7 @@ public class IterativeOrdering implements IOrderingPP {
                         updateStatistics(roundNumber, pmerFrequency, minValueNormalized, line, i);
                     } else {
                         int lastIndexInWindow = k + i - pivotLength;
-                        if (strcmp(currentValue, minValue) < 0) {
+                        if (compareMmer(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
                             minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
@@ -187,7 +202,8 @@ public class IterativeOrdering implements IOrderingPP {
                     biggestIndex = k;
                 }
             }
-            long newRank = currentOrdering[biggestIndex] + (int) (numMmers * percentagePunishment);
+//             TODO: might not be necessary to change both.
+            int newRank = currentOrdering[biggestIndex] + (int) (numMmers * percentagePunishment);
             currentOrdering[biggestIndex] = newRank;
             currentOrdering[stringUtils.getReversedMmer(biggestIndex, pivotLength)] = newRank;
             frequencies[biggestIndex] = 0;
@@ -197,27 +213,17 @@ public class IterativeOrdering implements IOrderingPP {
 
 
     @Override
-    public int findSmallest(char[] a, int from, int to) throws IOException {
-        int min_pos = from;
-        int minValue = stringUtils.getDecimal(a, min_pos, min_pos + pivotLength);
-        int currentValue = minValue;
-        for (int i = from + 1; i <= to - pivotLength; i++) {
-            currentValue = ((currentValue << 2) + StringUtils.valTable[a[i + pivotLength - 1] - 'A']) & mask;
-            if (strcmp(minValue, currentValue) > 0) {
-                min_pos = i;
-                minValue = currentValue;
-            }
-        }
-
-        return min_pos;
+    public int compareMmer(int x, int y) {
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
+        if (a == b) return 0;
+        if (currentOrdering[a] < currentOrdering[b]) return -1;
+        return 1;
     }
 
-
     @Override
-    public int strcmp(int x, int y) {
-        if (x == y) return 0;
-        if (currentOrdering[x] < currentOrdering[y]) return -1;
-        return 1;
+    public int[] getRanks() {
+        return currentOrdering.clone();
     }
 
     private void normalize() {

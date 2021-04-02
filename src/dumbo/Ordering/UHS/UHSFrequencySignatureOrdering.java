@@ -14,18 +14,16 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
     private boolean isInit;
 
     private long[] statsFrequency;
-    private int mask;
 
     public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, int k, int numStats) throws IOException {
         super(0, pivotLen, useSignature);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
-        pmerFrequency = new long[(int)Math.pow(4, pivotLen)];
+        pmerFrequency = new long[numMmers];
         this.k = k;
         this.numStats = numStats;
         isInit = false;
-        mask = (int)Math.pow(4, pivotLen) - 1;
     }
 
     @Override
@@ -35,15 +33,15 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         isRankInit = true;
     }
 
-    protected int strcmpSignature(int x, int y, boolean xAllowed, boolean yAllowed) throws IOException {
-        int baseCompareValue = strcmpBase(x, y);
+    protected int rawCompare(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
+        int baseCompareValue = compareMmerBase(xNormalized, yNormalized);
         if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
             return baseCompareValue;
         }
 
         // from down here - both in UHS
 
-        if(useSignature){
+        if (useSignature) {
             if (!xAllowed && yAllowed) {
                 return 1;
             } else if (!yAllowed && xAllowed) {
@@ -52,13 +50,12 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         }
 
         // both allowed or both not allowed
-        if(pmerFrequency[x] == pmerFrequency[y]){
-            if(x<y)
+        if (pmerFrequency[xNormalized] == pmerFrequency[yNormalized]) {
+            if (xNormalized < yNormalized)
                 return -1;
             else
                 return 1;
-        }
-        else if(pmerFrequency[x] < pmerFrequency[y])
+        } else if (pmerFrequency[xNormalized] < pmerFrequency[yNormalized])
             return -1;
         else
             return 1;
@@ -70,11 +67,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
         int counter = 0;
-
         String describeline;
-
         char[] lineCharArray = new char[readLen];
-
 
         while ((describeline = bfrG.readLine()) != null) {
 
@@ -82,23 +76,18 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
             bfrG.read();
 
             if (stringUtils.isReadLegal(lineCharArray)) {
-                char[] revCharArray = stringUtils.getReversedRead(lineCharArray);
-                for (int i = 0; i < lineCharArray.length-pivotLen; i++) {
+                for (int i = 0; i <= lineCharArray.length - pivotLength; i++) {
 
-                    int lineValue = stringUtils.getDecimal(lineCharArray, i, i+pivotLen);
-                    pmerFrequency[lineValue] += 1;
-
-                    int revValue = stringUtils.getDecimal(revCharArray, i, i+pivotLen);
-                    pmerFrequency[revValue] += 1;
-
+                    int value = stringUtils.getNormalizedValue(stringUtils.getDecimal(lineCharArray, i, i + pivotLength), pivotLength);
+                    pmerFrequency[value] += 1;
                     counter++;
                 }
-                if(counter > 1000000){
+                if (counter > 1000000) {
                     break;
                 }
             }
         }
-        initStats(bfrG);
+//        initStats(bfrG);
         bfrG.close();
         frG.close();
     }
@@ -108,7 +97,7 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         int numSampled = 0;
         boolean keepSample = true;
 
-        statsFrequency = new long[(int) Math.pow(4, pivotLen)];
+        statsFrequency = new long[numMmers];
 
         String describeline;
         char[] lineCharArray = new char[readLen];
@@ -128,8 +117,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
             if (stringUtils.isReadLegal(lineCharArray)) {
 
                 min_pos = findSmallest(lineCharArray, 0, k);
-                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
-                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLen, k);
+                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
+                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
 
                 statsFrequency[minValue]++;
 
@@ -140,13 +129,13 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
 
                     if (i > min_pos) {
                         min_pos = findSmallest(lineCharArray, i, i + k);
-                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLen);
+                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
 
 
                         statsFrequency[minValue]++;
                     } else {
-                        int lastIndexInWindow = k + i - pivotLen;
-                        if (strcmp(currentValue, minValue) < 0) {
+                        int lastIndexInWindow = k + i - pivotLength;
+                        if (compareMmer(currentValue, minValue) < 0) {
                             min_pos = lastIndexInWindow;
                             minValue = currentValue;
 
@@ -155,70 +144,8 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
                     }
                     statsFrequency[minValue]++;
                 }
-                if(numSampled > numStats) keepSample = false;
+                if (numSampled > numStats) keepSample = false;
             }
         }
     }
-
-//    public int[] getNormalizedForm()
-//    {
-//        int[] ret = rankOfPmer.clone();
-//        return ret;
-//    }
-
-    public void exportOrderingForCpp() {
-        File file = new File("ranks.txt");
-
-        BufferedWriter bf = null;
-
-        try {
-            bf = new BufferedWriter(new FileWriter(file));
-
-            for (int i = 0; i < rankOfPmer.length; i++) {
-                bf.write(Long.toString(rankOfPmer[i]));
-                bf.newLine();
-            }
-            bf.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
-            try {
-                //always close the writer
-                bf.close();
-            } catch (Exception e) {
-            }
-        }
-    }
-
-    public void exportBinningForCpp() {
-        File file = new File("freq.txt");
-
-        BufferedWriter bf = null;
-
-        try {
-            bf = new BufferedWriter(new FileWriter(file));
-
-            for (int i = 0; i < statsFrequency.length; i++) {
-                bf.write(Long.toString(statsFrequency[i]));
-                bf.newLine();
-            }
-            bf.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
-            try {
-                //always close the writer
-                bf.close();
-            } catch (Exception e) {
-            }
-        }
-    }
-
-
-
-
 }

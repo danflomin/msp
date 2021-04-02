@@ -1,4 +1,4 @@
-package dumbo.Ordering;
+package dumbo.Ordering.Standard;
 
 public class SignatureUtils {
 
