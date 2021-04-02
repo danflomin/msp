@@ -123,11 +123,15 @@ public class OrderingOptimizer {
             case "frequency": //   FREQUENCY SUCKS
                 FrequencyOrdering frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound, statSamples, k);
                 frequencyOrdering.initFrequency();
-//                ordering = frequencyOrdering;
+                ordering = frequencyOrdering;
                 break;
             case "signature":
                 LexicographicSignatureOrdering signatureOrdering = new LexicographicSignatureOrdering(pivot_len);
-//                ordering = signatureOrdering;
+                ordering = signatureOrdering;
+                break;
+            case "lexicographic":
+                LexicographicOrdering lexicographicOrdering = new LexicographicOrdering(pivot_len);
+                ordering = lexicographicOrdering;
                 break;
         }
 

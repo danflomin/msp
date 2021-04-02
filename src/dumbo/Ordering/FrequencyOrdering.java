@@ -4,13 +4,15 @@ import dumbo.StringUtils;
 
 import java.io.*;
 import java.util.Arrays;
+import java.util.Comparator;
 
-public class FrequencyOrdering implements IOrdering {
+public class FrequencyOrdering implements IOrderingPP {
     private int pivotLength;
     private String inputFile;
     private int readLen;
     private int bufSize;
-    private long[] pmerFrequency;
+    private int[] pmerFrequency;
+    private int[] currentOrdering;
     private long[] statsFrequency;
     private int numSamples;
     private int numStats;
@@ -23,12 +25,13 @@ public class FrequencyOrdering implements IOrdering {
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
-        pmerFrequency = new long[(int)Math.pow(4, pivotLen)];
+        pmerFrequency = new int[(int) Math.pow(4, pivotLen)];
+        currentOrdering = new int[(int) Math.pow(4, pivotLen)];
         this.numSamples = numSamples;
         this.numStats = numStats;
         this.k = k;
         stringUtils = new StringUtils();
-        mask = (int)Math.pow(4, pivotLen) - 1;
+        mask = (int) Math.pow(4, pivotLen) - 1;
     }
 
     public void initFrequency() throws IOException {
@@ -48,18 +51,14 @@ public class FrequencyOrdering implements IOrdering {
             bfrG.read();
 
             if (stringUtils.isReadLegal(lineCharArray)) {
-                char[] revCharArray = stringUtils.getReversedRead(lineCharArray);
-                for (int i = 0; i < lineCharArray.length-pivotLength; i++) {
+                for (int i = 0; i < lineCharArray.length - pivotLength; i++) {
 
-                    int lineValue = stringUtils.getDecimal(lineCharArray, i, i+pivotLength);
-                    pmerFrequency[lineValue] += 1;
-
-                    int revValue = stringUtils.getDecimal(revCharArray, i, i+pivotLength);
-                    pmerFrequency[revValue] += 1;
+                    int value = stringUtils.getNormalizedValue(stringUtils.getDecimal(lineCharArray, i, i + pivotLength), pivotLength);
+                    pmerFrequency[value] += 1;
 
                     counter++;
                 }
-                if(counter > numSamples){
+                if (counter > numSamples) {
                     break;
                 }
             }
@@ -73,6 +72,7 @@ public class FrequencyOrdering implements IOrdering {
     }
 
     private void initStats(BufferedReader bfrG) throws IOException {
+//        TODO: FIX
 
         int numSampled = 0;
         boolean keepSample = true;
@@ -124,128 +124,51 @@ public class FrequencyOrdering implements IOrdering {
                     }
                     statsFrequency[minValue]++;
                 }
-                if(numSampled > numStats) keepSample = false;
+                if (numSampled > numStats) keepSample = false;
             }
         }
-    }
-
-    public long[] getRawOrdering()
-    {
-        return pmerFrequency.clone();
     }
 
 
     private void normalize() {
         Integer[] temp = new Integer[pmerFrequency.length];
-        for (int i = 0; i < temp.length; temp[i] = i, i++) ;
+        for (int i = 0; i < temp.length; i++)
+            temp[i] = i;
 
-        Arrays.sort(temp, this::strcmp);
-        for(int i = 0 ; i<temp.length; i++){
-            pmerFrequency[i] = temp[i];
+        Arrays.sort(temp, Comparator.comparingInt(a -> pmerFrequency[a]));
+        for (int i = 0; i < temp.length; i++) {
+            currentOrdering[temp[i]] = i;
         }
 
-        for(int i = 0 ; i<temp.length; i++){
-            int rev = getReversed(i);
-            long min = Math.max(pmerFrequency[i], pmerFrequency[rev]);
-            pmerFrequency[i] = min;
-            pmerFrequency[rev] = min;
-        }
-
-    }
-
-    private int getReversed(int x) {
-        int rev = 0;
-        int immer = ~x;
-        for (int i = 0; i < pivotLength; ++i) {
-            rev <<= 2;
-            rev |= immer & 0x3;
-            immer >>= 2;
-        }
-        return rev;
     }
 
 
     @Override
     public int findSmallest(char[] a, int from, int to) throws IOException {
         int min_pos = from;
+        int minValue = stringUtils.getDecimal(a, min_pos, min_pos + pivotLength);
+        int currentValue = minValue;
         for (int i = from + 1; i <= to - pivotLength; i++) {
-            if (strcmp(a, a, min_pos, i, pivotLength) > 0)
+            currentValue = ((currentValue << 2) + StringUtils.valTable[a[i + pivotLength - 1] - 'A']) & mask;
+            if (strcmp(minValue, currentValue) > 0) {
                 min_pos = i;
+                minValue = currentValue;
+            }
         }
         return min_pos;
     }
 
-    @Override
-    public int strcmp(char[] a, char[] b, int froma, int fromb, int len) throws IOException {
-        int x = stringUtils.getDecimal(a, froma, froma + pivotLength);
-        int y = stringUtils.getDecimal(b, fromb, fromb + pivotLength);
 
-        return strcmp(x,y);
-    }
+    public int strcmp(int x, int y) {
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
+        if (a == b) return 0;
 
-    public int strcmp(int x, int y)
-    {
-        if (x == y) return 0;
-        if (pmerFrequency[x] == pmerFrequency[y]) {
-            if(x<y)
-                return -1;
-            return 1;
-        }
-        if(pmerFrequency[x] < pmerFrequency[y])
+        if (pmerFrequency[x] < pmerFrequency[y])
             return -1;
-        return 1;
+        else
+            return 1;
     }
 
 
-    public void exportOrderingForCpp() {
-        File file = new File("ranks.txt");
-
-        BufferedWriter bf = null;
-
-        try {
-            bf = new BufferedWriter(new FileWriter(file));
-
-            for (int i = 0; i < pmerFrequency.length; i++) {
-                bf.write(Long.toString(pmerFrequency[i]));
-                bf.newLine();
-            }
-            bf.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
-            try {
-                //always close the writer
-                bf.close();
-            } catch (Exception e) {
-            }
-        }
-    }
-
-    public void exportBinningForCpp() {
-        File file = new File("freq.txt");
-
-        BufferedWriter bf = null;
-
-        try {
-            bf = new BufferedWriter(new FileWriter(file));
-
-            for (int i = 0; i < statsFrequency.length; i++) {
-                bf.write(Long.toString(statsFrequency[i]));
-                bf.newLine();
-            }
-            bf.flush();
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-
-            try {
-                //always close the writer
-                bf.close();
-            } catch (Exception e) {
-            }
-        }
-    }
 }
