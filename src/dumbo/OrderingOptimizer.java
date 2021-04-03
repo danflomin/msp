@@ -1,6 +1,7 @@
 package dumbo;
 
 import dumbo.Ordering.*;
+import dumbo.Ordering.Standard.FrequencyOrdering;
 import dumbo.Ordering.Standard.LexicographicOrdering;
 import dumbo.Ordering.Standard.LexicographicSignatureOrdering;
 import dumbo.Ordering.UHS.UHSFrequencySignatureOrdering;

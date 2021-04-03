@@ -17,15 +17,13 @@ public abstract class UHSOrderingBase extends OrderingBase {
     protected static final int BOTH_NOT_IN_UHS = 1001;
 
 
-    protected int[] rankOfPmer;
     protected boolean isRankInit;
 
 
     public UHSOrderingBase(int pivotLen) throws IOException {
         super(pivotLen);
         uhsBits = uhsBitSet(pivotLen);
-        rankOfPmer = new int[(int) Math.pow(4, pivotLen)];
-        Arrays.fill(rankOfPmer, Integer.MAX_VALUE);
+        Arrays.fill(mmerRanks, Integer.MAX_VALUE);
         isRankInit = false;
     }
 
@@ -96,20 +94,11 @@ public abstract class UHSOrderingBase extends OrderingBase {
         pmers.toArray(pmersArr);
         Arrays.sort(pmersArr, this::rawCompare);
         for (int i = 0; i < pmersArr.length; i++) {
-            rankOfPmer[pmersArr[i]] = i;
+            mmerRanks[pmersArr[i]] = i;
         }
         normalize();
         System.out.println("finish init rank");
     }
 
-    protected void normalize() {
-        Integer[] temp = new Integer[rankOfPmer.length];
-        for (int i = 0; i < temp.length; i++)
-            temp[i] = i;
 
-        Arrays.sort(temp, Comparator.comparingLong(a -> rankOfPmer[a]));
-        for (int i = 0; i < temp.length; i++) {
-            rankOfPmer[temp[i]] = i;
-        }
-    }
 }

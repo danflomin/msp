@@ -1,5 +1,6 @@
-package dumbo.Ordering;
+package dumbo.Ordering.Standard;
 
+import dumbo.Ordering.OrderingBase;
 import dumbo.StringUtils;
 
 import java.io.*;
@@ -22,8 +23,8 @@ public class FrequencyOrdering extends OrderingBase {
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
-        pmerFrequency = new int[(int) Math.pow(4, pivotLen)];
-        currentOrdering = new int[(int) Math.pow(4, pivotLen)];
+        pmerFrequency = new int[numMmers];
+        currentOrdering = new int[numMmers];
         this.numSamples = numSamples;
         this.numStats = numStats;
         this.k = k;

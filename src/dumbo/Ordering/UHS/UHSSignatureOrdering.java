@@ -28,27 +28,6 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
     }
 
 
-    @Override
-    public int compareMmer(int x, int y) {
-
-        if (!isRankInit)
-        {
-            System.out.println("problema - rank not initialized");
-            return -1;
-        }
-
-
-        int a = stringUtils.getNormalizedValue(x, pivotLength);
-        int b = stringUtils.getNormalizedValue(y, pivotLength);
-
-        if (a == b) return 0;
-
-        // isRankInit = true here
-        if (rankOfPmer[a] < rankOfPmer[b]) {
-            return -1;
-        }
-        return 1;
-    }
 
 
     protected int rawCompare(int x, int y) {
