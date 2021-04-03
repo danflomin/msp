@@ -23,10 +23,11 @@ public abstract class OrderingBase {
         this.mask = numMmers - 1;
         this.stringUtils = new StringUtils();
         this.mmerRanks = new int[numMmers];
+        this.isRankInitialized = false;
     }
 
 
-    public abstract void initializeRanks();
+    public abstract void initializeRanks() throws IOException;
 
     public int compareMmer(int x, int y) throws Exception {
 
@@ -49,7 +50,7 @@ public abstract class OrderingBase {
         return mmerRanks.clone();
     }
 
-    public int findSmallest(char[] a, int from, int to) throws IOException {
+    public int findSmallest(char[] a, int from, int to) throws Exception {
         int min_pos = from;
         int minValue = stringUtils.getDecimal(a, min_pos, min_pos + pivotLength);
         int currentValue = minValue;

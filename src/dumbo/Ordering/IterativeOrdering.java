@@ -226,7 +226,7 @@ public class IterativeOrdering extends OrderingBase {
         return currentOrdering.clone();
     }
 
-    private void normalize() {
+    protected void normalize() {
         Integer[] temp = new Integer[currentOrdering.length];
         for (int i = 0; i < temp.length; i++)
             temp[i] = i;

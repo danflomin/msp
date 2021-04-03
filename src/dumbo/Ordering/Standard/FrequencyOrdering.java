@@ -126,7 +126,7 @@ public class FrequencyOrdering extends OrderingBase {
     }
 
 
-    private void normalize() {
+    protected void normalize() {
         Integer[] temp = new Integer[pmerFrequency.length];
         for (int i = 0; i < temp.length; i++)
             temp[i] = i;

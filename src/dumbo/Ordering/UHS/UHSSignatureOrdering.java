@@ -22,12 +22,10 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
     }
 
     @Override
-    public void initRank() throws IOException {
-        super.initRank();
-        isRankInit = true;
+    public void initializeRanks() throws IOException {
+        super.initializeRanks();
+        isRankInitialized = true;
     }
-
-
 
 
     protected int rawCompare(int x, int y) {

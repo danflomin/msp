@@ -27,10 +27,10 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
     }
 
     @Override
-    public void initRank() throws IOException {
-        initFrequency();
-        super.initRank();
-        isRankInit = true;
+    public void initializeRanks() throws IOException {
+        countFrequency();
+        super.initializeRanks();
+        isRankInitialized = true;
     }
 
     protected int rawCompare(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
@@ -62,7 +62,7 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
 
     }
 
-    private void initFrequency() throws IOException {
+    private void countFrequency() throws IOException {
         FileReader frG = new FileReader(inputFile);
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
@@ -92,60 +92,5 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         frG.close();
     }
 
-    private void initStats(BufferedReader bfrG) throws IOException {
 
-        int numSampled = 0;
-        boolean keepSample = true;
-
-        statsFrequency = new long[numMmers];
-
-        String describeline;
-        char[] lineCharArray = new char[readLen];
-
-        int len = readLen;
-
-
-        int min_pos = -1;
-        int minValue, currentValue;
-
-        while (keepSample && (describeline = bfrG.readLine()) != null) {
-
-            bfrG.read(lineCharArray, 0, readLen);
-            bfrG.read();
-            String line = new String(lineCharArray);
-
-            if (stringUtils.isReadLegal(lineCharArray)) {
-
-                min_pos = findSmallest(lineCharArray, 0, k);
-                minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-                currentValue = stringUtils.getDecimal(lineCharArray, k - pivotLength, k);
-
-                statsFrequency[minValue]++;
-
-                int bound = len - k + 1;
-                for (int i = 1; i < bound; i++) {
-                    numSampled++;
-                    currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;//0xffff;
-
-                    if (i > min_pos) {
-                        min_pos = findSmallest(lineCharArray, i, i + k);
-                        minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
-
-
-                        statsFrequency[minValue]++;
-                    } else {
-                        int lastIndexInWindow = k + i - pivotLength;
-                        if (compareMmer(currentValue, minValue) < 0) {
-                            min_pos = lastIndexInWindow;
-                            minValue = currentValue;
-
-                            statsFrequency[minValue]++;
-                        }
-                    }
-                    statsFrequency[minValue]++;
-                }
-                if (numSampled > numStats) keepSample = false;
-            }
-        }
-    }
 }
