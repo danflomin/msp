@@ -28,7 +28,6 @@ public abstract class OrderingBase {
 
 
     public abstract void initializeRanks() throws Exception;
-    protected abstract int rawCompareMmer(int x, int y) throws Exception;
 
     public int compareMmer(int x, int y) throws Exception {
         if (!isRankInitialized)

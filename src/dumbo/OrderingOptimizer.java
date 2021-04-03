@@ -117,12 +117,12 @@ public class OrderingOptimizer {
 ////                ordering = ordering10;
 //                break;
             case "universal-frequency-signature":
-                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, k, statSamples);
+                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, statSamples);
                 universalFrequencySignature.initializeRanks();
                 ordering = universalFrequencySignature;
                 break;
             case "universal-frequency":
-                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, k, statSamples);
+                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, statSamples);
                 ;
                 universalFrequency.initializeRanks();
                 ordering = universalFrequency;

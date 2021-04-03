@@ -71,7 +71,6 @@ public class FrequencyOrdering extends OrderingBase {
         isRankInitialized = true;
     }
 
-    @Override
     public int rawCompareMmer(int x, int y) {
         int a = stringUtils.getNormalizedValue(x, pivotLength);
         int b = stringUtils.getNormalizedValue(y, pivotLength);

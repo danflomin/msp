@@ -216,8 +216,4 @@ public class IterativeOrdering extends OrderingBase {
         initFrequency();
     }
 
-    @Override
-    protected int rawCompareMmer(int x, int y) throws Exception {
-        return compareMmer(x, y);
-    }
 }
