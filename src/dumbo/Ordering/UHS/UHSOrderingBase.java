@@ -17,15 +17,12 @@ public abstract class UHSOrderingBase extends OrderingBase {
     protected static final int BOTH_NOT_IN_UHS = 1001;
 
 
-
     public UHSOrderingBase(int pivotLen) throws IOException {
         super(pivotLen);
         uhsBits = uhsBitSet(pivotLen);
         Arrays.fill(mmerRanks, Integer.MAX_VALUE);
 
     }
-
-    abstract int rawCompare(int x, int y);
 
 
     public boolean isInUHS(int pmerDecimal) {
@@ -51,6 +48,17 @@ public abstract class UHSOrderingBase extends OrderingBase {
         if (yInUHS)
             return 1;
         return BOTH_NOT_IN_UHS;
+    }
+
+    @Override
+    protected int rawCompareMmer(int x, int y) {
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
+
+        int result = compareMmerBase(a, b);
+        if (result == -1 || result == 1)
+            return result;
+        return Integer.compare(a, b);
     }
 
     private byte[] uhsBitSet(int pivotLen) throws IOException {
@@ -80,21 +88,28 @@ public abstract class UHSOrderingBase extends OrderingBase {
         return bits;
     }
 
-    public void initializeRanks() throws IOException {
+    @Override
+    public void initializeRanks() throws Exception {
         System.out.println("start init rank");
         HashSet<Integer> normalizedMmersUHS = new HashSet<>();
         for (int i = 0; i < numMmers; i++) {
             if (isInUHS(i)) normalizedMmersUHS.add(i);
         }
 
-        Integer[] pmersArr = new Integer[normalizedMmersUHS.size()];
-        normalizedMmersUHS.toArray(pmersArr);
-        Arrays.sort(pmersArr, this::rawCompare);
-        for (int i = 0; i < pmersArr.length; i++) {
-            mmerRanks[pmersArr[i]] = i;
+        Integer[] mmers = new Integer[normalizedMmersUHS.size()];
+        normalizedMmersUHS.toArray(mmers);
+        try {
+            Arrays.sort(mmers, this::rawCompareMmer);
+        } catch (Exception e) {
+            throw e;
+        }
+
+        for (int i = 0; i < mmers.length; i++) {
+            mmerRanks[mmers[i]] = i;
         }
         normalize();
         System.out.println("finish init rank");
+        isRankInitialized = true;
     }
 
 

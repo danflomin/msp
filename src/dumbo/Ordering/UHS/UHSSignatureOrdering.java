@@ -21,30 +21,8 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
         this(0, pivotLen, useSignature);
     }
 
-    @Override
-    public void initializeRanks() throws IOException {
-        super.initializeRanks();
-        isRankInitialized = true;
-    }
 
-
-    protected int rawCompare(int x, int y) {
-        int a = stringUtils.getNormalizedValue(x, pivotLength);
-        int b = stringUtils.getNormalizedValue(y, pivotLength);
-
-        if (a == b) return 0;
-
-        boolean aAllowed = true, bAllowed = true;
-        if (useSignature) {
-            aAllowed = signatureUtils.isAllowed(a);
-            bAllowed = signatureUtils.isAllowed(b);
-        }
-
-        return rawCompare(a, b, aAllowed, bAllowed);
-    }
-
-
-    protected int rawCompare(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
+    protected int rawCompareMmer(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
         int baseCompareValue = compareMmerBase(xNormalized, yNormalized);
         if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
             return baseCompareValue;
@@ -64,4 +42,21 @@ public class UHSSignatureOrdering extends UHSOrderingBase {
             return 1;
 
     }
+
+    @Override
+    protected int rawCompareMmer(int x, int y) {
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
+
+        if (a == b) return 0;
+
+        boolean aAllowed = true, bAllowed = true;
+        if (useSignature) {
+            aAllowed = signatureUtils.isAllowed(a);
+            bAllowed = signatureUtils.isAllowed(b);
+        }
+
+        return rawCompareMmer(a, b, aAllowed, bAllowed);
+    }
+
 }

@@ -32,7 +32,7 @@ public class MinimizerCounter {
     }
 
 
-    private long[] getMinimizersCounters() throws IOException {
+    private long[] getMinimizersCounters() throws Exception {
         frG = new FileReader(kmerSetFile);
         bfrG = new BufferedReader(frG, bufSize);
 

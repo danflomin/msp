@@ -27,23 +27,19 @@ public abstract class OrderingBase {
     }
 
 
-    public abstract void initializeRanks() throws IOException;
+    public abstract void initializeRanks() throws Exception;
+    protected abstract int rawCompareMmer(int x, int y) throws Exception;
 
     public int compareMmer(int x, int y) throws Exception {
-
         if (!isRankInitialized)
             throw new Exception("problema - rank not initialized");
-
 
         int a = stringUtils.getNormalizedValue(x, pivotLength);
         int b = stringUtils.getNormalizedValue(y, pivotLength);
 
         if (a == b) return 0;
-
-        if (mmerRanks[a] < mmerRanks[b])
-            return -1;
-        else
-            return 1;
+        if (mmerRanks[a] < mmerRanks[b]) return -1;
+        return 1;
     }
 
     public int[] getRanks() {

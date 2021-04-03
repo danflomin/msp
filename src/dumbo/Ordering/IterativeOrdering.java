@@ -14,7 +14,6 @@ public class IterativeOrdering extends OrderingBase {
     private int readLen;
     private int bufSize;
     private int k;
-    private int[] currentOrdering;
     private SignatureUtils signatureUtils;
     private HashMap<Integer, HashSet<String>> frequency;
 
@@ -47,7 +46,6 @@ public class IterativeOrdering extends OrderingBase {
         this.bufSize = bufSize;
         this.k = k;
         signatureUtils = new SignatureUtils(pivotLength);
-        currentOrdering = new int[(int) Math.pow(4, pivotLength)];
         initialized = false;
     }
 
@@ -55,7 +53,7 @@ public class IterativeOrdering extends OrderingBase {
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, int[] initialOrdering) {
         this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
-        currentOrdering = initialOrdering.clone();
+        mmerRanks = initialOrdering.clone();
         initialized = true;
         badArgumentsThrow();
     }
@@ -64,32 +62,32 @@ public class IterativeOrdering extends OrderingBase {
             int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, OrderingBase initialOrdering) throws IOException {
         this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
-        currentOrdering = initialOrdering.getRanks().clone();
+        mmerRanks = initialOrdering.getRanks().clone();
         initialized = true;
         badArgumentsThrow();
     }
 
     private void badArgumentsThrow() {
-        if (currentOrdering.length != numMmers)
+        if (mmerRanks.length != numMmers)
             throw new IllegalArgumentException("initialOrdering is not of correct size");
         if (useSignature)
             throw new IllegalArgumentException("Can't initialize ordering from outside with useSignature as true");
     }
 
 
-    public void initFrequency() throws IOException {
+    protected void initFrequency() throws Exception {
 
         if (!initialized) {
             for (int i = 0; i < numMmers; i++) {
                 int canonical = Math.min(i, stringUtils.getReversedMmer(i, pivotLength));
-                currentOrdering[i] = canonical;
-                currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
+                mmerRanks[i] = canonical;
+                mmerRanks[stringUtils.getReversedMmer(i, pivotLength)] = canonical;
             }
             if (useSignature) {
                 for (int i = 0; i < numMmers; i++) {
                     if (!signatureUtils.isAllowed(i) && i < stringUtils.getReversedMmer(i, pivotLength)) {
-                        currentOrdering[i] += numMmers;
-                        currentOrdering[stringUtils.getReversedMmer(i, pivotLength)] += numMmers;
+                        mmerRanks[i] += numMmers;
+                        mmerRanks[stringUtils.getReversedMmer(i, pivotLength)] += numMmers;
                     }
                 }
             }
@@ -104,7 +102,7 @@ public class IterativeOrdering extends OrderingBase {
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
         statFrequency = new long[numMmers];
-        HashMap<Integer, HashSet<String>> pmerFrequency = new HashMap<>(numMmers);
+        HashMap<Integer, HashSet<String>> pmerFrequency = new HashMap<>(roundSamples * 2);
 
         String describeline;
         char[] lineCharArray = new char[readLen];
@@ -203,9 +201,9 @@ public class IterativeOrdering extends OrderingBase {
                 }
             }
 //             TODO: might not be necessary to change both.
-            int newRank = currentOrdering[biggestIndex] + (int) (numMmers * percentagePunishment);
-            currentOrdering[biggestIndex] = newRank;
-            currentOrdering[stringUtils.getReversedMmer(biggestIndex, pivotLength)] = newRank;
+            int newRank = mmerRanks[biggestIndex] + (int) (numMmers * percentagePunishment);
+            mmerRanks[biggestIndex] = newRank;
+            mmerRanks[stringUtils.getReversedMmer(biggestIndex, pivotLength)] = newRank;
             frequencies[biggestIndex] = 0;
             frequencies[stringUtils.getReversedMmer(biggestIndex, pivotLength)] = 0;
         }
@@ -213,29 +211,13 @@ public class IterativeOrdering extends OrderingBase {
 
 
     @Override
-    public int compareMmer(int x, int y) {
-        int a = stringUtils.getNormalizedValue(x, pivotLength);
-        int b = stringUtils.getNormalizedValue(y, pivotLength);
-        if (a == b) return 0;
-        if (currentOrdering[a] < currentOrdering[b]) return -1;
-        return 1;
+    public void initializeRanks() throws Exception {
+        isRankInitialized = true;
+        initFrequency();
     }
 
     @Override
-    public int[] getRanks() {
-        return currentOrdering.clone();
+    protected int rawCompareMmer(int x, int y) throws Exception {
+        return compareMmer(x, y);
     }
-
-    protected void normalize() {
-        Integer[] temp = new Integer[currentOrdering.length];
-        for (int i = 0; i < temp.length; i++)
-            temp[i] = i;
-
-        Arrays.sort(temp, Comparator.comparingLong(a -> currentOrdering[a]));
-        for (int i = 0; i < temp.length; i++) {
-            currentOrdering[temp[i]] = i;
-        }
-    }
-
-
 }

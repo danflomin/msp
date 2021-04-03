@@ -1,39 +1,56 @@
 package dumbo.Ordering.UHS;
 
-import dumbo.StringUtils;
+import dumbo.Ordering.Standard.SignatureUtils;
 
 import java.io.*;
 
-public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
+public class UHSFrequencySignatureOrdering extends UHSOrderingBase {
     private String inputFile;
     private int readLen;
     private int bufSize;
-    private long[] pmerFrequency;
-    private int k;
-    private int numStats;
-    private boolean isInit;
+    private long[] mmerFrequency;
+    private int numMmersToCount;
 
-    private long[] statsFrequency;
+    private SignatureUtils signatureUtils;
+    protected boolean useSignature;
 
-    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, int k, int numStats) throws IOException {
-        super(0, pivotLen, useSignature);
+
+    public UHSFrequencySignatureOrdering(int pivotLen, String infile, int readLen, int bufSize, boolean useSignature, int numMmersToCount) throws IOException {
+        super(pivotLen);
         this.inputFile = infile;
         this.readLen = readLen;
         this.bufSize = bufSize;
-        pmerFrequency = new long[numMmers];
-        this.k = k;
-        this.numStats = numStats;
-        isInit = false;
+        this.mmerFrequency = new long[numMmers];
+        this.numMmersToCount = numMmersToCount;
+
+        this.useSignature = useSignature;
+        this.signatureUtils = new SignatureUtils(pivotLen);
     }
 
     @Override
-    public void initializeRanks() throws IOException {
+    public void initializeRanks() throws Exception {
         countFrequency();
         super.initializeRanks();
         isRankInitialized = true;
     }
 
-    protected int rawCompare(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
+    @Override
+    protected int rawCompareMmer(int x, int y) {
+        int a = stringUtils.getNormalizedValue(x, pivotLength);
+        int b = stringUtils.getNormalizedValue(y, pivotLength);
+
+        if (a == b) return 0;
+
+        boolean aAllowed = true, bAllowed = true;
+        if (useSignature) {
+            aAllowed = signatureUtils.isAllowed(a);
+            bAllowed = signatureUtils.isAllowed(b);
+        }
+
+        return rawCompareMmer(a, b, aAllowed, bAllowed);
+    }
+
+    protected int rawCompareMmer(int xNormalized, int yNormalized, boolean xAllowed, boolean yAllowed) {
         int baseCompareValue = compareMmerBase(xNormalized, yNormalized);
         if (baseCompareValue != BOTH_IN_UHS && baseCompareValue != BOTH_NOT_IN_UHS) {
             return baseCompareValue;
@@ -50,12 +67,12 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
         }
 
         // both allowed or both not allowed
-        if (pmerFrequency[xNormalized] == pmerFrequency[yNormalized]) {
+        if (mmerFrequency[xNormalized] == mmerFrequency[yNormalized]) {
             if (xNormalized < yNormalized)
                 return -1;
             else
                 return 1;
-        } else if (pmerFrequency[xNormalized] < pmerFrequency[yNormalized])
+        } else if (mmerFrequency[xNormalized] < mmerFrequency[yNormalized])
             return -1;
         else
             return 1;
@@ -79,15 +96,14 @@ public class UHSFrequencySignatureOrdering extends UHSSignatureOrdering {
                 for (int i = 0; i <= lineCharArray.length - pivotLength; i++) {
 
                     int value = stringUtils.getNormalizedValue(stringUtils.getDecimal(lineCharArray, i, i + pivotLength), pivotLength);
-                    pmerFrequency[value] += 1;
+                    mmerFrequency[value] += 1;
                     counter++;
                 }
-                if (counter > 1000000) {
+                if (counter > numMmersToCount) {
                     break;
                 }
             }
         }
-//        initStats(bfrG);
         bfrG.close();
         frG.close();
     }
