@@ -90,7 +90,7 @@ public class OrderingOptimizer {
                 ordering = iterative;
                 break;
             case "9-frequency":
-                FrequencyOrdering _frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound);
+                FrequencyOrdering _frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 100000000);
                 _frequencyOrdering.initializeRanks();
 
                 IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
@@ -117,12 +117,12 @@ public class OrderingOptimizer {
 ////                ordering = ordering10;
 //                break;
             case "universal-frequency-signature":
-                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, statSamples);
+                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, 100000000);
                 universalFrequencySignature.initializeRanks();
                 ordering = universalFrequencySignature;
                 break;
             case "universal-frequency":
-                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, statSamples);
+                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, 100000000);
                 ;
                 universalFrequency.initializeRanks();
                 ordering = universalFrequency;
