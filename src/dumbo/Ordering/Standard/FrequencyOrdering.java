@@ -65,6 +65,7 @@ public class FrequencyOrdering extends OrderingBase {
         }
 
         Arrays.sort(mmers, this::rawCompareMmer);
+//        Arrays.sort(mmers, Comparator.comparingInt(a -> pmerFrequency[a]));
         for (int i = 0; i < mmers.length; i++) {
             mmerRanks[mmers[i]] = i;
         }

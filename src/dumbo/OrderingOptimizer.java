@@ -18,7 +18,8 @@ public class OrderingOptimizer {
         int k = 60, pivot_len = 8, bufferSize = 81920;
         int readLen = 124;
         String orderingName = "iterativeOrdering";
-        int numRounds = 0, elementsToPush = 0, samplesPerRound = 0, statSamples = 0;
+        int numRounds = 0, elementsToPush = 0, samplesPerRound = 0;
+        long statSamples = 0;
         double punishPercentage = 1;
         String version = "10";
         String kmerSetFile = null;
@@ -57,7 +58,7 @@ public class OrderingOptimizer {
             else if (args[i].equals("-elementsToPush"))
                 elementsToPush = new Integer(args[i + 1]);
             else if (args[i].equals("-statSamples"))
-                statSamples = new Integer(args[i + 1]);
+                statSamples = new Long(args[i + 1]);
             else if (args[i].equals("-punishPercentage"))
                 punishPercentage = new Double(args[i + 1]);
             else {
@@ -83,7 +84,7 @@ public class OrderingOptimizer {
 
             case "9-normalized": // good version
                 IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false);
+                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false);
                 iterative.initializeRanks();
 //                ordering9_withCounterNormalized.exportOrderingForCpp();
 //                ordering9_withCounterNormalized.exportBinningForCpp();
@@ -94,7 +95,7 @@ public class OrderingOptimizer {
                 _frequencyOrdering.initializeRanks();
 
                 IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false, _frequencyOrdering);
+                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false, _frequencyOrdering);
                 iterativeFrequency.initializeRanks();
 //                ordering9_withCounterNormalized.exportOrderingForCpp();
 //                ordering9_withCounterNormalized.exportBinningForCpp();
@@ -102,7 +103,7 @@ public class OrderingOptimizer {
                 break;
             case "9-normalized-signature":
                 IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, true);
+                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, true);
                 iterativeSignature.initializeRanks();
 //                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
 //                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
@@ -142,9 +143,17 @@ public class OrderingOptimizer {
                 break;
         }
 
+        ExportUtils exportUtils = new ExportUtils();
+
+        int[] ranks = ordering.getRanks();
+        long[] longRanks = new long[ranks.length];
+        for (int i = 0; i < longRanks.length; longRanks[i]=ranks[i], i++) ;
+
+        exportUtils.exportOrderingForCpp(longRanks);
+
         if (kmerSetFile != null) {
             try {
-                ExportUtils exportUtils = new ExportUtils();
+
                 System.out.println("Counting minimizer appearances:");
                 System.out.print("Input File: " + kmerSetFile + "\n" +
                         "Kmer Length: " + k + "\n" +
@@ -152,10 +161,20 @@ public class OrderingOptimizer {
                         "R/W Buffer Size: " + bufferSize + "\n" +
                         "Ordering: " + orderingName + "\n");
 
-                MinimizerCounter minimizerCounter = new MinimizerCounter(k, kmerSetFile, pivot_len, bufferSize, ordering);
-                long[] counters = minimizerCounter.Run();
+//                MinimizerCounter minimizerCounter = new MinimizerCounter(k, kmerSetFile, pivot_len, bufferSize, ordering);
+//                long[] counters = minimizerCounter.Run();
+
+//                LoadCounter counter = new LoadCounter(pivot_len, infile, readLen, bufferSize, k, statSamples, ordering);
+//                counter.initFrequency();
+
+                BinSizeCounter counter = new BinSizeCounter(pivot_len, infile, readLen, bufferSize, k, statSamples, ordering);
+                counter.initFrequency();
+
+                long[] counters = counter.getStatistics();
+
                 exportUtils.writeToFile(counters, orderingName + pivot_len + "_" + "kmers");
                 System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + Arrays.stream(counters).sum());
+                exportUtils.exportBinningForCpp(counters);
 
 
             } catch (Exception E) {
