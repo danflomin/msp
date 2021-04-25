@@ -86,8 +86,6 @@ public class OrderingOptimizer {
                 IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false);
                 iterative.initializeRanks();
-//                ordering9_withCounterNormalized.exportOrderingForCpp();
-//                ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = iterative;
                 break;
             case "9-frequency":
@@ -97,26 +95,24 @@ public class OrderingOptimizer {
                 IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false, _frequencyOrdering);
                 iterativeFrequency.initializeRanks();
-//                ordering9_withCounterNormalized.exportOrderingForCpp();
-//                ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = iterativeFrequency;
+                break;
+            case "split-frequency":
+                FrequencyOrdering _frequencyOrdering2 = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 1000000000);
+                _frequencyOrdering2.initializeRanks();
+
+                IterativeOrderingV2 iterative2Frequency = new IterativeOrderingV2(pivot_len, infile, readLen, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, false, _frequencyOrdering2);
+                iterative2Frequency.initializeRanks();
+                ordering = iterative2Frequency;
                 break;
             case "9-normalized-signature":
                 IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, true);
                 iterativeSignature.initializeRanks();
-//                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
-//                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
                 ordering = iterativeSignature;
                 System.out.println("lolz asdasd");
                 break;
-//            case "10":
-//                IterativeOrdering10_WithCounterNormalized ordering10 = new IterativeOrdering10_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-//                ordering10.initFrequency();
-//                ordering10.exportOrderingForCpp();
-//                ordering10.exportBinningForCpp();
-////                ordering = ordering10;
-//                break;
             case "universal-frequency-signature":
                 UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, 100000000);
                 universalFrequencySignature.initializeRanks();
@@ -124,7 +120,6 @@ public class OrderingOptimizer {
                 break;
             case "universal-frequency":
                 UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, 100000000);
-                ;
                 universalFrequency.initializeRanks();
                 ordering = universalFrequency;
                 break;

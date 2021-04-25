@@ -59,21 +59,23 @@ public class BinSizeCounter {
 
             int bound = readLen - k + 1;
             for (int i = 1; i < bound; i++) {
+
                 currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;
 
                 if (i > min_pos) {
                     min_pos = ordering.findSmallest(lineCharArray, i, i + k);
                     minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
                     minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
-                } else {
+                    frequencies[minValueNormalized] += k;
+                } else if (ordering.compareMmer(currentValue, minValue) < 0) {
                     int lastIndexInWindow = k + i - pivotLength;
-                    if (ordering.compareMmer(currentValue, minValue) < 0) {
-                        min_pos = lastIndexInWindow;
-                        minValue = currentValue;
-                        minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
-                    }
+                    min_pos = lastIndexInWindow;
+                    minValue = currentValue;
+                    minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
+                    frequencies[minValueNormalized] += k;
                 }
-                frequencies[minValueNormalized]++;
+                else
+                    frequencies[minValueNormalized]++;
             }
         }
     }

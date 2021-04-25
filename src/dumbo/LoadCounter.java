@@ -186,14 +186,14 @@ public class LoadCounter {
 
 
         // all ratios
-        System.out.println("x = [");
-        for (int j = 0; j < stats.length; j++) {
-            if(frequencies[j] != 0)
-                System.out.print((float) stats[j] / frequencies[j] + ", ");
-            else
-                System.out.print("0, ");
-        }
-        System.out.println("]");
+//        System.out.println("x = [");
+//        for (int j = 0; j < stats.length; j++) {
+//            if(frequencies[j] != 0)
+//                System.out.print((float) stats[j] / frequencies[j] + ", ");
+//            else
+//                System.out.print("0, ");
+//        }
+//        System.out.println("]");
 //        ConcurrentLinkedQueue<Integer>x = new ConcurrentLinkedQueue<>();
 //        x.remove()
 
