@@ -42,6 +42,7 @@ public class OrderingOptimizer {
                 k = new Integer(args[i + 1]);
             else if (args[i].equals("-kmers-file"))
                 kmerSetFile = args[i + 1];
+
 //            else
 //				if(args[i].equals("-o"))
 //				orderingName = args[i+1];
@@ -69,7 +70,7 @@ public class OrderingOptimizer {
         }
 
         System.out.println("Optimizing an ordering:");
-        System.out.print("Input File: " + kmerSetFile + "\n" +
+        System.out.print("Input File: " + infile + "\n" +
                 "Kmer Length: " + k + "\n" +
                 "Pivot Length: " + pivot_len + "\n" +
                 "R/W Buffer Size: " + bufferSize + "\n" +
@@ -83,7 +84,7 @@ public class OrderingOptimizer {
         switch (version) {
 
             case "9-normalized": // good version
-                IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
+                IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false);
                 iterative.initializeRanks();
                 ordering = iterative;
@@ -92,7 +93,7 @@ public class OrderingOptimizer {
                 FrequencyOrdering _frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 100000000);
                 _frequencyOrdering.initializeRanks();
 
-                IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
+                IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false, _frequencyOrdering);
                 iterativeFrequency.initializeRanks();
                 ordering = iterativeFrequency;
@@ -107,7 +108,7 @@ public class OrderingOptimizer {
                 ordering = iterative2Frequency;
                 break;
             case "9-normalized-signature":
-                IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
+                IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, true);
                 iterativeSignature.initializeRanks();
                 ordering = iterativeSignature;
@@ -146,6 +147,8 @@ public class OrderingOptimizer {
 
         exportUtils.exportOrderingForCpp(longRanks);
 
+
+        long[] counters;
         if (kmerSetFile != null) {
             try {
 
@@ -153,29 +156,28 @@ public class OrderingOptimizer {
                 System.out.print("Input File: " + kmerSetFile + "\n" +
                         "Kmer Length: " + k + "\n" +
                         "Pivot Length: " + pivot_len + "\n" +
-                        "R/W Buffer Size: " + bufferSize + "\n" +
                         "Ordering: " + orderingName + "\n");
 
-//                MinimizerCounter minimizerCounter = new MinimizerCounter(k, kmerSetFile, pivot_len, bufferSize, ordering);
-//                long[] counters = minimizerCounter.Run();
-
-//                LoadCounter counter = new LoadCounter(pivot_len, infile, readLen, bufferSize, k, statSamples, ordering);
-//                counter.initFrequency();
-
-                BinSizeCounter counter = new BinSizeCounter(pivot_len, infile, readLen, bufferSize, k, statSamples, ordering);
-                counter.initFrequency();
-
-                long[] counters = counter.getStatistics();
+                MinimizerCounter minimizerCounter = new MinimizerCounter(k, kmerSetFile, pivot_len, bufferSize, ordering);
+                counters = minimizerCounter.Run();
 
                 exportUtils.writeToFile(counters, orderingName + pivot_len + "_" + "kmers");
-                System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + Arrays.stream(counters).sum());
-                exportUtils.exportBinningForCpp(counters);
-
-
             } catch (Exception E) {
                 System.out.println("Exception caught!");
                 E.printStackTrace();
             }
+        }
+        if (statSamples > 0) {
+            System.out.println("Collecting stats for binning");
+//          LoadCounter counter = new LoadCounter(pivot_len, infile, readLen, bufferSize, k, statSamples, ordering);
+//          counter.initFrequency();
+
+            BinSizeCounter counter = new BinSizeCounter(pivot_len, infile, bufferSize, k, statSamples, ordering);
+            counter.initFrequency();
+
+            counters = counter.getStatistics();
+            exportUtils.exportBinningForCpp(counters);
+
         }
     }
 
