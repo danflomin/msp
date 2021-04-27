@@ -1,8 +1,6 @@
 package dumbo;
 
 import dumbo.Ordering.OrderingBase;
-import net.agkn.hll.HLL;
-import net.agkn.hll.HLLType;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

@@ -98,15 +98,6 @@ public class OrderingOptimizer {
                 iterativeFrequency.initializeRanks();
                 ordering = iterativeFrequency;
                 break;
-            case "split-frequency":
-                FrequencyOrdering _frequencyOrdering2 = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 1000000000);
-                _frequencyOrdering2.initializeRanks();
-
-                IterativeOrderingV2 iterative2Frequency = new IterativeOrderingV2(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, false, _frequencyOrdering2);
-                iterative2Frequency.initializeRanks();
-                ordering = iterative2Frequency;
-                break;
             case "9-normalized-signature":
                 IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, true);
