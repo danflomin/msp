@@ -12,7 +12,6 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 public class BinSizeCounter {
     private String inputFile;
-    private int readLen;
     private int bufSize;
     private int k;
 
@@ -29,11 +28,10 @@ public class BinSizeCounter {
 
 
     public BinSizeCounter(
-            int pivotLength, String infile, int readLen, int bufSize, int k, long statisticsSamples, OrderingBase ordering) {
+            int pivotLength, String infile, int bufSize, int k, long statisticsSamples, OrderingBase ordering) {
         this.pivotLength = pivotLength;
         this.statisticsSamples = statisticsSamples;
         this.inputFile = infile;
-        this.readLen = readLen;
         this.bufSize = bufSize;
         this.k = k;
         numMmers = (int) Math.pow(4, pivotLength);
@@ -57,59 +55,57 @@ public class BinSizeCounter {
 
             frequencies[minValueNormalized] += k;
 
-            int bound = readLen - k + 1;
+            int bound = lineCharArray.length - k + 1;
             for (int i = 1; i < bound; i++) {
+
                 currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;
 
                 if (i > min_pos) {
                     min_pos = ordering.findSmallest(lineCharArray, i, i + k);
                     minValue = stringUtils.getDecimal(lineCharArray, min_pos, min_pos + pivotLength);
                     minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
-                } else {
+                    frequencies[minValueNormalized] += k;
+                } else if (ordering.compareMmer(currentValue, minValue) < 0) {
                     int lastIndexInWindow = k + i - pivotLength;
-                    if (ordering.compareMmer(currentValue, minValue) < 0) {
-                        min_pos = lastIndexInWindow;
-                        minValue = currentValue;
-                        minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
-                    }
+                    min_pos = lastIndexInWindow;
+                    minValue = currentValue;
+                    minValueNormalized = stringUtils.getNormalizedValue(minValue, pivotLength);
+                    frequencies[minValueNormalized] += k;
                 }
-                frequencies[minValueNormalized]++;
+                else
+                    frequencies[minValueNormalized]++;
             }
         }
     }
 
 
     protected void initFrequency() throws Exception {
-
-
         boolean keepSample = true;
         long numSampled = 0;
-        int roundNumber = 0;
 
         FileReader frG = new FileReader(inputFile);
         BufferedReader bfrG = new BufferedReader(frG, bufSize);
 
 
-        String describeline;
-        char[] lineCharArray = new char[readLen];
+        String describeline, line;
+        char[] lineCharArray;
 
-        ThreadPoolExecutor executor =
-                (ThreadPoolExecutor) Executors.newFixedThreadPool(1);
-
+        int readLen;
 
         while (keepSample && (describeline = bfrG.readLine()) != null) {
 
-            bfrG.read(lineCharArray, 0, readLen);
-            bfrG.read();
+            line = bfrG.readLine();
+            readLen = line.length();
+            lineCharArray = line.toCharArray();
+
+            if(readLen < k)
+                continue;
 
             concurrentCounter(lineCharArray);
             numSampled += readLen - k;
             if (numSampled > statisticsSamples)
                 keepSample = false;
-
         }
-
-        executor.shutdown();
         bfrG.close();
         frG.close();
     }
