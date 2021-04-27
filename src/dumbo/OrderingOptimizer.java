@@ -18,7 +18,8 @@ public class OrderingOptimizer {
         int k = 60, pivot_len = 8, bufferSize = 81920;
         int readLen = 124;
         String orderingName = "iterativeOrdering";
-        int numRounds = 0, elementsToPush = 0, samplesPerRound = 0, statSamples = 0;
+        int numRounds = 0, elementsToPush = 0, samplesPerRound = 0;
+        long statSamples = 0;
         double punishPercentage = 1;
         String version = "10";
         String kmerSetFile = null;
@@ -41,6 +42,7 @@ public class OrderingOptimizer {
                 k = new Integer(args[i + 1]);
             else if (args[i].equals("-kmers-file"))
                 kmerSetFile = args[i + 1];
+
 //            else
 //				if(args[i].equals("-o"))
 //				orderingName = args[i+1];
@@ -57,7 +59,7 @@ public class OrderingOptimizer {
             else if (args[i].equals("-elementsToPush"))
                 elementsToPush = new Integer(args[i + 1]);
             else if (args[i].equals("-statSamples"))
-                statSamples = new Integer(args[i + 1]);
+                statSamples = new Long(args[i + 1]);
             else if (args[i].equals("-punishPercentage"))
                 punishPercentage = new Double(args[i + 1]);
             else {
@@ -68,7 +70,7 @@ public class OrderingOptimizer {
         }
 
         System.out.println("Optimizing an ordering:");
-        System.out.print("Input File: " + kmerSetFile + "\n" +
+        System.out.print("Input File: " + infile + "\n" +
                 "Kmer Length: " + k + "\n" +
                 "Pivot Length: " + pivot_len + "\n" +
                 "R/W Buffer Size: " + bufferSize + "\n" +
@@ -82,40 +84,36 @@ public class OrderingOptimizer {
         switch (version) {
 
             case "9-normalized": // good version
-                IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false);
+                IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false);
                 iterative.initializeRanks();
-//                ordering9_withCounterNormalized.exportOrderingForCpp();
-//                ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = iterative;
                 break;
             case "9-frequency":
                 FrequencyOrdering _frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 100000000);
                 _frequencyOrdering.initializeRanks();
 
-                IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, false, _frequencyOrdering);
+                IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false, _frequencyOrdering);
                 iterativeFrequency.initializeRanks();
-//                ordering9_withCounterNormalized.exportOrderingForCpp();
-//                ordering9_withCounterNormalized.exportBinningForCpp();
                 ordering = iterativeFrequency;
                 break;
+            case "split-frequency":
+                FrequencyOrdering _frequencyOrdering2 = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 1000000000);
+                _frequencyOrdering2.initializeRanks();
+
+                IterativeOrderingV2 iterative2Frequency = new IterativeOrderingV2(pivot_len, infile, readLen, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, false, _frequencyOrdering2);
+                iterative2Frequency.initializeRanks();
+                ordering = iterative2Frequency;
+                break;
             case "9-normalized-signature":
-                IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, readLen, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage, true);
+                IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, bufferSize, k,
+                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, true);
                 iterativeSignature.initializeRanks();
-//                ordering9_withCounterNormalized_andSignature.exportOrderingForCpp();
-//                ordering9_withCounterNormalized_andSignature.exportBinningForCpp();
                 ordering = iterativeSignature;
                 System.out.println("lolz asdasd");
                 break;
-//            case "10":
-//                IterativeOrdering10_WithCounterNormalized ordering10 = new IterativeOrdering10_WithCounterNormalized(pivot_len, infile, readLen, bufferSize, k, samplesPerRound, numRounds, elementsToPush, statSamples, punishPercentage);
-//                ordering10.initFrequency();
-//                ordering10.exportOrderingForCpp();
-//                ordering10.exportBinningForCpp();
-////                ordering = ordering10;
-//                break;
             case "universal-frequency-signature":
                 UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, 100000000);
                 universalFrequencySignature.initializeRanks();
@@ -123,7 +121,6 @@ public class OrderingOptimizer {
                 break;
             case "universal-frequency":
                 UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, 100000000);
-                ;
                 universalFrequency.initializeRanks();
                 ordering = universalFrequency;
                 break;
@@ -142,26 +139,45 @@ public class OrderingOptimizer {
                 break;
         }
 
+        ExportUtils exportUtils = new ExportUtils();
+
+        int[] ranks = ordering.getRanks();
+        long[] longRanks = new long[ranks.length];
+        for (int i = 0; i < longRanks.length; longRanks[i]=ranks[i], i++) ;
+
+        exportUtils.exportOrderingForCpp(longRanks);
+
+
+        long[] counters;
         if (kmerSetFile != null) {
             try {
-                ExportUtils exportUtils = new ExportUtils();
+
                 System.out.println("Counting minimizer appearances:");
                 System.out.print("Input File: " + kmerSetFile + "\n" +
                         "Kmer Length: " + k + "\n" +
                         "Pivot Length: " + pivot_len + "\n" +
-                        "R/W Buffer Size: " + bufferSize + "\n" +
                         "Ordering: " + orderingName + "\n");
 
                 MinimizerCounter minimizerCounter = new MinimizerCounter(k, kmerSetFile, pivot_len, bufferSize, ordering);
-                long[] counters = minimizerCounter.Run();
+                counters = minimizerCounter.Run();
+
                 exportUtils.writeToFile(counters, orderingName + pivot_len + "_" + "kmers");
-                System.out.println("TOTAL NUMBER OF DISTINCT KMERS = " + Arrays.stream(counters).sum());
-
-
             } catch (Exception E) {
                 System.out.println("Exception caught!");
                 E.printStackTrace();
             }
+        }
+        if (statSamples > 0) {
+            System.out.println("Collecting stats for binning");
+//          LoadCounter counter = new LoadCounter(pivot_len, infile, readLen, bufferSize, k, statSamples, ordering);
+//          counter.initFrequency();
+
+            BinSizeCounter counter = new BinSizeCounter(pivot_len, infile, bufferSize, k, statSamples, ordering);
+            counter.initFrequency();
+
+            counters = counter.getStatistics();
+            exportUtils.exportBinningForCpp(counters);
+
         }
     }
 

@@ -11,7 +11,7 @@ import java.util.HashSet;
 
 public class IterativeOrdering extends OrderingBase {
     private String inputFile;
-    private int readLen;
+
     private int bufSize;
     private int k;
     private SignatureUtils signatureUtils;
@@ -32,7 +32,7 @@ public class IterativeOrdering extends OrderingBase {
 
 
     public IterativeOrdering(
-            int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
+            int pivotLength, String infile, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature) {
         super(pivotLength);
         this.roundSamples = roundSamples;
@@ -42,7 +42,7 @@ public class IterativeOrdering extends OrderingBase {
         this.percentagePunishment = percentagePunishment;
         this.useSignature = useSignature;
         this.inputFile = infile;
-        this.readLen = readLen;
+
         this.bufSize = bufSize;
         this.k = k;
         signatureUtils = new SignatureUtils(pivotLength);
@@ -50,18 +50,18 @@ public class IterativeOrdering extends OrderingBase {
     }
 
     public IterativeOrdering(
-            int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
+            int pivotLength, String infile, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, int[] initialOrdering) {
-        this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
+        this(pivotLength, infile, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
         mmerRanks = initialOrdering.clone();
         initialized = true;
         badArgumentsThrow();
     }
 
     public IterativeOrdering(
-            int pivotLength, String infile, int readLen, int bufSize, int k, int roundSamples, int rounds,
+            int pivotLength, String infile, int bufSize, int k, int roundSamples, int rounds,
             int elementsToPush, int statisticsSamples, double percentagePunishment, boolean useSignature, OrderingBase initialOrdering) throws IOException {
-        this(pivotLength, infile, readLen, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
+        this(pivotLength, infile, bufSize, k, roundSamples, rounds, elementsToPush, statisticsSamples, percentagePunishment, useSignature);
         mmerRanks = initialOrdering.getRanks().clone();
         initialized = true;
         badArgumentsThrow();
@@ -104,20 +104,26 @@ public class IterativeOrdering extends OrderingBase {
         statFrequency = new long[numMmers];
         HashMap<Integer, HashSet<String>> pmerFrequency = new HashMap<>(roundSamples * 2);
 
-        String describeline;
-        char[] lineCharArray = new char[readLen];
-
-        int len = readLen;
+        String skippedDescribeLine, line;
+        char[] lineCharArray;// = new char[readLen];
+        int readLen;
 
 
         int min_pos = -1;
         int minValue, currentValue, minValueNormalized;
 
-        while (keepSample && (describeline = bfrG.readLine()) != null) {
+        while (keepSample && (skippedDescribeLine = bfrG.readLine()) != null) {
 
-            bfrG.read(lineCharArray, 0, readLen);
-            bfrG.read();
-            String line = new String(lineCharArray);
+            line = bfrG.readLine();
+            readLen = line.length();
+            lineCharArray = line.toCharArray();
+
+            if(readLen < k)
+                continue;
+
+//            bfrG.read(lineCharArray, 0, readLen);
+//            bfrG.read();
+//            String line = new String(lineCharArray);
 
             if (stringUtils.isReadLegal(lineCharArray)) {
 
@@ -128,7 +134,7 @@ public class IterativeOrdering extends OrderingBase {
 
                 updateStatistics(roundNumber, pmerFrequency, minValueNormalized, line, 0);
 
-                int bound = len - k + 1;
+                int bound = readLen - k + 1;
                 for (int i = 1; i < bound; i++) {
                     numSampled++;
                     currentValue = ((currentValue << 2) + StringUtils.valTable[lineCharArray[i + k - 1] - 'A']) & mask;
