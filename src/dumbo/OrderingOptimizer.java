@@ -3,11 +3,13 @@ package dumbo;
 import dumbo.Ordering.*;
 import dumbo.Ordering.Standard.FrequencyOrdering;
 import dumbo.Ordering.Standard.LexicographicOrdering;
+import dumbo.Ordering.Standard.RandomOrdering;
 import dumbo.Ordering.Standard.LexicographicSignatureOrdering;
 import dumbo.Ordering.UHS.UHSFrequencySignatureOrdering;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 public class OrderingOptimizer {
 
@@ -83,39 +85,19 @@ public class OrderingOptimizer {
         System.out.println(version);
         switch (version) {
 
-            case "9-normalized": // good version
+            case "9-normalized":
                 IterativeOrdering iterative = new IterativeOrdering(pivot_len, infile, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false);
                 iterative.initializeRanks();
                 ordering = iterative;
-                break;
-            case "9-frequency":
-                FrequencyOrdering _frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, 100000000);
-                _frequencyOrdering.initializeRanks();
-
-                IterativeOrdering iterativeFrequency = new IterativeOrdering(pivot_len, infile, bufferSize, k,
-                        samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, false, _frequencyOrdering);
-                iterativeFrequency.initializeRanks();
-                ordering = iterativeFrequency;
                 break;
             case "9-normalized-signature":
                 IterativeOrdering iterativeSignature = new IterativeOrdering(pivot_len, infile, bufferSize, k,
                         samplesPerRound, numRounds, elementsToPush, 0, punishPercentage, true);
                 iterativeSignature.initializeRanks();
                 ordering = iterativeSignature;
-                System.out.println("lolz asdasd");
                 break;
-            case "universal-frequency-signature":
-                UHSFrequencySignatureOrdering universalFrequencySignature = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, true, 100000000);
-                universalFrequencySignature.initializeRanks();
-                ordering = universalFrequencySignature;
-                break;
-            case "universal-frequency":
-                UHSFrequencySignatureOrdering universalFrequency = new UHSFrequencySignatureOrdering(pivot_len, infile, readLen, bufferSize, false, 100000000);
-                universalFrequency.initializeRanks();
-                ordering = universalFrequency;
-                break;
-            case "frequency": //   FREQUENCY SUCKS
+            case "frequency":
                 FrequencyOrdering frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound);
                 frequencyOrdering.initializeRanks();
                 ordering = frequencyOrdering;
@@ -126,6 +108,11 @@ public class OrderingOptimizer {
                 break;
             case "lexicographic":
                 ordering = new LexicographicOrdering(pivot_len);
+                ordering.initializeRanks();
+                break;
+            case "random":
+                Random r = new Random();
+                ordering = new RandomOrdering(pivot_len, r.nextInt());
                 ordering.initializeRanks();
                 break;
         }

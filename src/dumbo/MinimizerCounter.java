@@ -3,6 +3,7 @@ package dumbo;
 import dumbo.Ordering.OrderingBase;
 
 import java.io.*;
+import java.util.*;
 
 public class MinimizerCounter {
 
@@ -36,17 +37,24 @@ public class MinimizerCounter {
         frG = new FileReader(kmerSetFile);
         bfrG = new BufferedReader(frG, bufSize);
 
-        String describeline;
+
+        String describeline, line;
 
         int minPos;
-        char[] lineCharArray = new char[k];
+        char[] lineCharArray;
 
 
         int minValue, minValueNormalized, currentValue, start;
         while ((describeline = bfrG.readLine()) != null) {
 
-            bfrG.read(lineCharArray, 0, k);
-            bfrG.read();
+//            bfrG.read(lineCharArray, 0, k);
+//            bfrG.read();
+
+            line = bfrG.readLine();
+            int readLen = line.length();
+            if(readLen != k)
+                throw new Exception("Input row is not of length k");
+            lineCharArray = line.toCharArray();
 
             if (stringUtils.isReadLegal(lineCharArray)) {
                 minPos = ordering.findSmallest(lineCharArray, 0, k);
@@ -58,7 +66,6 @@ public class MinimizerCounter {
 
         bfrG.close();
         frG.close();
-
         return minimizerCounters.clone();
     }
 
@@ -66,7 +73,6 @@ public class MinimizerCounter {
         long time1 = 0;
         long t1 = System.currentTimeMillis();
         System.out.println("Minimizers counting Begin!");
-        System.out.println("hi");
         long[] counters = getMinimizersCounters();
 
         long t2 = System.currentTimeMillis();
