@@ -5,7 +5,6 @@ import dumbo.Ordering.Standard.FrequencyOrdering;
 import dumbo.Ordering.Standard.LexicographicOrdering;
 import dumbo.Ordering.Standard.RandomOrdering;
 import dumbo.Ordering.Standard.LexicographicSignatureOrdering;
-import dumbo.Ordering.UHS.UHSFrequencySignatureOrdering;
 
 import java.io.IOException;
 import java.util.Arrays;
