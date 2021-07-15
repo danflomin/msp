@@ -96,11 +96,6 @@ public class OrderingOptimizer {
                 iterativeSignature.initializeRanks();
                 ordering = iterativeSignature;
                 break;
-            case "frequency":
-                FrequencyOrdering frequencyOrdering = new FrequencyOrdering(pivot_len, infile, readLen, bufferSize, numRounds * samplesPerRound);
-                frequencyOrdering.initializeRanks();
-                ordering = frequencyOrdering;
-                break;
             case "signature":
                 ordering = new LexicographicSignatureOrdering(pivot_len);
                 ordering.initializeRanks();
